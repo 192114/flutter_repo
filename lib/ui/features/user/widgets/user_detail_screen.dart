@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/theme/theme_ext.dart';
 import '../../../core/widgets/async_value_view.dart';
 import '../view_model/user_detail_view_model.dart';
 
@@ -56,15 +57,15 @@ class _ProfileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final colors = context.colors;
     final textTheme = Theme.of(context).textTheme;
 
     return Row(
       children: [
         CircleAvatar(
           radius: 32,
-          backgroundColor: colorScheme.primaryContainer,
-          foregroundColor: colorScheme.onPrimaryContainer,
+          backgroundColor: colors.accent,
+          foregroundColor: colors.accentForeground,
           child: Text(
             state.user.name.isEmpty ? '?' : state.user.name.characters.first,
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -85,7 +86,7 @@ class _ProfileHeader extends StatelessWidget {
                 Text(
                   state.user.company!.name,
                   style: textTheme.bodyMedium
-                      ?.copyWith(color: colorScheme.onSurfaceVariant),
+                      ?.copyWith(color: colors.mutedForeground),
                 ),
             ],
           ),
@@ -117,7 +118,7 @@ class _InfoTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final colors = context.colors;
     final textTheme = Theme.of(context).textTheme;
 
     return Card(
@@ -126,7 +127,7 @@ class _InfoTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
-            Icon(icon, size: 20, color: colorScheme.primary),
+            Icon(icon, size: 20, color: colors.primary),
             const SizedBox(width: 12),
             Text(label, style: textTheme.labelLarge),
             const SizedBox(width: 12),
@@ -135,7 +136,7 @@ class _InfoTile extends StatelessWidget {
                 value,
                 textAlign: TextAlign.end,
                 style: textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
+                  color: colors.mutedForeground,
                 ),
               ),
             ),

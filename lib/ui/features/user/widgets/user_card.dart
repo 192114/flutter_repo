@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../../data/models/user.dart';
+import '../../../core/theme/app_tokens.dart';
+import '../../../core/theme/theme_ext.dart';
 
 /// 用户卡片（纯展示组件，零业务逻辑）。
 ///
@@ -16,22 +18,23 @@ class UserCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    // 颜色统一走语义 token（随主题切换），不直接消费 ColorScheme。
+    final colors = context.colors;
     final textTheme = Theme.of(context).textTheme;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadius.circular(AppRadius.lg),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
               CircleAvatar(
                 radius: 24,
-                backgroundColor: colorScheme.primaryContainer,
-                foregroundColor: colorScheme.onPrimaryContainer,
+                backgroundColor: colors.accent,
+                foregroundColor: colors.accentForeground,
                 child: Text(
                   user.name.isEmpty ? '?' : user.name.characters.first,
                   style: const TextStyle(fontWeight: FontWeight.bold),
@@ -54,7 +57,7 @@ class UserCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: textTheme.bodySmall
-                          ?.copyWith(color: colorScheme.onSurfaceVariant),
+                          ?.copyWith(color: colors.mutedForeground),
                     ),
                   ],
                 ),
@@ -62,7 +65,7 @@ class UserCard extends StatelessWidget {
               const SizedBox(width: 8),
               Icon(
                 Icons.chevron_right,
-                color: colorScheme.onSurfaceVariant,
+                color: colors.mutedForeground,
               ),
             ],
           ),

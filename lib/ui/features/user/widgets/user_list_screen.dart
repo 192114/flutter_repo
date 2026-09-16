@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../core/widgets/async_value_view.dart';
+import '../../../core/widgets/theme_mode_menu.dart';
 import '../view_model/user_list_view_model.dart';
 import 'user_card.dart';
 
@@ -25,7 +26,10 @@ class UserListScreen extends ConsumerWidget {
     final viewModel = ref.read(userListViewModelProvider.notifier);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('用户列表')),
+      appBar: AppBar(
+        title: const Text('用户列表'),
+        actions: const [ThemeModeMenu()],
+      ),
       body: Column(
         children: [
           Padding(

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../theme/theme_ext.dart';
+
 /// [AsyncValue] 通用渲染组件：统一 Loading / Error / Data 三态展示。
 ///
 /// 属于共享 UI 组件（UI Layer core），任何 Feature 均可复用，
@@ -54,7 +56,7 @@ class _ErrorView extends StatelessWidget {
             Icon(
               Icons.error_outline,
               size: 48,
-              color: Theme.of(context).colorScheme.error,
+              color: context.colors.destructive,
             ),
             const SizedBox(height: 12),
             Text(message, textAlign: TextAlign.center),
