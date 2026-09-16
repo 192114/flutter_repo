@@ -1,0 +1,47 @@
+
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ / Android Studio 个人配置（团队共享配置走 .vscode/launch.example.jsonc）
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# VSCode 个人调试配置（团队共享示例见 launch.example.jsonc）
+.vscode/launch.json
+
+# Flutter/Dart/Pub 工具生成物
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# FVM Version Cache
+.fvm/

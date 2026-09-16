@@ -1,0 +1,75 @@
+# This file configures the analyzer, which statically analyzes Dart code to
+# check for errors, warnings, and lints.
+#
+# The issues identified by the analyzer are surfaced in the UI of Dart-enabled
+# IDEs (https://dart.dev/tools#ides-and-editors). The analyzer can also be
+# invoked from the command line by running `flutter analyze`.
+
+include: package:flutter_lints/flutter.yaml
+
+# ── Riverpod 官方 lint 插件（基于 analysis_server_plugin）─────────────
+# 检测 ProviderScope 缺失、family 参数 == 缺陷、Notifier 封装破坏、
+# dispose 中使用 ref 等 Riverpod 架构错误，CLI 与 IDE 均生效。
+plugins:
+  riverpod_lint: ^3.1.9
+
+analyzer:
+  exclude:
+    # build_runner 生成文件无需静态分析（part 文件仍会被正常解析）。
+    - '**/*.freezed.dart'
+    - '**/*.g.dart'
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
+
+linter:
+  # 在 flutter_lints 推荐集之上启用的项目增强规则
+  # （avoid_print 已包含于 flutter_lints，无需重复声明）。
+  rules:
+    # ── 异步安全 ──
+    # 未 await 的 Future 表达式必须显式 unawaited()，防止静默吞掉异步异常。
+    - unawaited_futures
+    # 禁止 async void 方法（异常无法捕获，直接逃逸到 Zone）。
+    - avoid_void_async
+
+    # ── 架构边界与依赖治理 ──
+    # 禁止 import 未在 pubspec.yaml 声明的传递依赖，保证分层边界清晰。
+    - depend_on_referenced_packages
+
+    # ── 不可变性优先（呼应 freezed 状态理念）──
+    # 局部变量 / for-each 循环变量默认 final。
+    - prefer_final_locals
+    - prefer_final_in_for_each
+
+    # ── 声明与排序一致性 ──
+    # 所有方法必须显式声明返回类型。
+    - always_declare_return_types
+    # import 排序：dart: → package: → 相对路径，同组内按字母序。
+    - directives_ordering
+    # pubspec.yaml 依赖按字母序排列。
+    - sort_pub_dependencies
+    # pubspec 中的 URL 字段必须使用 https。
+    - secure_pubspec_urls
+
+    # ── 性能 ──
+    # 禁用 dart:io 慢速异步 API（如 File.readAs*）。
+    - avoid_slow_async_io
+    # forEach 中的闭包改用 for 循环（避免闭包开销且无法提前 return）。
+    - avoid_function_literals_in_foreach_calls
+
+    # ── 可维护性 ──
+    # 禁止传入与参数默认值相同的冗余实参。
+    - avoid_redundant_argument_values
+    # 删除冗余括号 / 纯转发 lambda（改用 tear-off）。
+    # （unnecessary_import 已内置为 analyzer 原生 warning，无需 lint 声明）
+    - unnecessary_parenthesis
+    - unnecessary_lambdas
+    # on / extends / implements 组合子按规范顺序书写。
+    - combinators_ordering
+
+# Additional information about this file can be found at the following
+# page: https://dart.dev/tools/analysis
