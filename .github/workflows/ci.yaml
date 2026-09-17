@@ -1,0 +1,36 @@
+# CI：静态检查 + 全量测试（与 AGENTS.md / README.md 的本地验证标准一致）。
+# SDK 版本由 .fvmrc 锁定（与本地 FVM 一致），故无需在 CI 中安装 FVM。
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+concurrency:
+  # 同一分支 / PR 的旧运行自动取消，节省 CI 时长。
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      # 直接读取 .fvmrc 锁定的 Flutter 版本（含缓存加速）。
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: .fvmrc
+          cache: true
+
+      - name: 安装依赖
+        run: flutter pub get
+
+      # 必须用 dart analyze：flutter analyze 不会加载 riverpod_lint 插件。
+      # --fatal-infos：info 级也视为失败，与「0 issues」标准一致。
+      - name: 静态检查（0 issues）
+        run: dart analyze --fatal-infos
+
+      - name: 全量测试
+        run: flutter test

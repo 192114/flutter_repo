@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../exceptions/app_exception.dart';
 import '../models/user.dart';
 import 'dio_client.dart';
 
@@ -8,7 +9,8 @@ import 'dio_client.dart';
 ///
 /// 职责边界：
 /// - 不做缓存、不做组合数据 —— 那是 Repository 的职责；
-/// - 不做错误语义转换 —— Repository 统一把 DioException 映射为 AppException。
+/// - 技术异常（DioException）由 Repository 统一映射为 AppException，
+///   唯一例外：响应体为空（无法解析）时在此直接抛 [NotFoundException]。
 class UserApiService {
   UserApiService(this._dio);
 
@@ -26,7 +28,15 @@ class UserApiService {
   /// GET /users/:id —— 获取单个用户。
   Future<User> fetchUser(int id) async {
     final response = await _dio.get<Map<String, dynamic>>('/users/$id');
-    return User.fromJson(response.data!);
+    final data = response.data;
+    if (data == null) {
+      // HTTP 200 但响应体为空：视为资源不存在。
+      // 直接 User.fromJson(response.data!) 会抛 Null check Error
+      // （Error 而非 Exception），绕过 Repository 的异常映射，
+      // 把技术细节泄露给 UI 层。
+      throw const NotFoundException();
+    }
+    return User.fromJson(data);
   }
 }
 

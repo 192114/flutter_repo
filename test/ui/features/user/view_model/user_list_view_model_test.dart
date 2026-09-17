@@ -1,13 +1,14 @@
+// ViewModel 单元测试：通过 override Repository 为 Fake，
+// 不启动 UI、不请求网络即可覆盖全部业务分支。
+
 import 'package:flutter_repo/data/exceptions/app_exception.dart';
 import 'package:flutter_repo/data/repositories/user_repository.dart';
 import 'package:flutter_repo/ui/features/user/view_model/user_list_view_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'fakes/fake_user_repository.dart';
+import '../../../../fakes/fake_user_repository.dart';
 
-/// ViewModel 单元测试：通过 override Repository 为 Fake，
-/// 不启动 UI、不请求网络即可覆盖全部业务分支。
 void main() {
   group('UserListViewModel', () {
     late FakeUserRepository fakeRepository;

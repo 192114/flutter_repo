@@ -50,6 +50,9 @@ linter:
     - always_declare_return_types
     # import 排序：dart: → package: → 相对路径，同组内按字母序。
     - directives_ordering
+    # lib 内 import 统一相对路径风格，禁止混入 package:flutter_repo/... 绝对导入
+    # （该规则只作用于 lib/，test/ 按 Flutter 惯例使用 package: import）。
+    - prefer_relative_imports
     # pubspec.yaml 依赖按字母序排列。
     - sort_pub_dependencies
     # pubspec 中的 URL 字段必须使用 https。

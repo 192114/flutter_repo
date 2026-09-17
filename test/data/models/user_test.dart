@@ -1,7 +1,8 @@
+// 不可变模型测试：验证 freezed + json_serializable 生成的行为。
+
 import 'package:flutter_repo/data/models/user.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// 不可变模型测试：验证 freezed + json_serializable 生成的行为。
 void main() {
   group('User', () {
     test('fromJson 正确反序列化（含嵌套 Company）', () {

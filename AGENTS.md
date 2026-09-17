@@ -63,3 +63,5 @@ lib/
 fvm dart analyze   # 0 issues
 fvm flutter test   # all passed
 ```
+
+测试组织：`test/` 目录结构镜像 `lib/`，测试文件命名为 `<被测文件名>_test.dart`；共享 Fake 放 `test/fakes/`（不要在 lib 内写测试辅助类）。
