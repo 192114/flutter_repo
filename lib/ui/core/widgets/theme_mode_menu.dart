@@ -23,19 +23,22 @@ class ThemeModeMenu extends ConsumerWidget {
     return PopupMenuButton<ThemeMode>(
       tooltip: '主题模式',
       icon: Icon(_iconFor(current)),
-      onSelected: (mode) =>
-          ref.read(themeModeProvider.notifier).setMode(mode),
+      onSelected: (mode) => ref.read(themeModeProvider.notifier).setMode(mode),
       itemBuilder: (context) => [
         for (final (mode, label, icon) in _entries)
           PopupMenuItem<ThemeMode>(
             value: mode,
-            child: Row(
-              children: [
-                Icon(icon, size: 20),
-                const SizedBox(width: 12),
-                Expanded(child: Text(label)),
-                if (mode == current) const Icon(Icons.check, size: 18),
-              ],
+            // checked 让读屏器播报当前选中项。
+            child: Semantics(
+              checked: mode == current,
+              child: Row(
+                children: [
+                  Icon(icon, size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(child: Text(label)),
+                  if (mode == current) const Icon(Icons.check, size: 18),
+                ],
+              ),
             ),
           ),
       ],
@@ -43,8 +46,8 @@ class ThemeModeMenu extends ConsumerWidget {
   }
 
   IconData _iconFor(ThemeMode mode) => switch (mode) {
-        ThemeMode.light => Icons.light_mode_outlined,
-        ThemeMode.dark => Icons.dark_mode_outlined,
-        ThemeMode.system => Icons.brightness_auto_outlined,
-      };
+    ThemeMode.light => Icons.light_mode_outlined,
+    ThemeMode.dark => Icons.dark_mode_outlined,
+    ThemeMode.system => Icons.brightness_auto_outlined,
+  };
 }

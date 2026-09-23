@@ -33,7 +33,9 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.input,
     required this.ring,
     required this.success,
+    required this.successForeground,
     required this.warning,
+    required this.warningForeground,
     required this.info,
   });
 
@@ -102,21 +104,26 @@ class AppColors extends ThemeExtension<AppColors> {
   // ==================== 状态色 ====================
   /// 成功。
   final Color success;
+  final Color successForeground;
 
   /// 警告。
   final Color warning;
+  final Color warningForeground;
 
   /// 信息。
   final Color info;
 
   /// 浅色主题色板（品牌蓝基调 + shadcn zinc 中性色）。
+  ///
+  /// 对比度按 WCAG AA（正文 ≥4.5:1）校准：
+  /// - primary 4F6DF5→465BF0、destructive DC2626→D11F1F（白字达标）。
   static const AppColors light = AppColors(
     brightness: Brightness.light,
     background: Color(0xFFFFFFFF),
     foreground: Color(0xFF09090B),
     card: Color(0xFFFFFFFF),
     cardForeground: Color(0xFF09090B),
-    primary: Color(0xFF4F6DF5),
+    primary: Color(0xFF465BF0),
     primaryForeground: Color(0xFFFFFFFF),
     secondary: Color(0xFFF4F4F5),
     secondaryForeground: Color(0xFF18181B),
@@ -124,17 +131,22 @@ class AppColors extends ThemeExtension<AppColors> {
     mutedForeground: Color(0xFF71717A),
     accent: Color(0xFFEEF2FF),
     accentForeground: Color(0xFF3B53C7),
-    destructive: Color(0xFFDC2626),
+    destructive: Color(0xFFD11F1F),
     destructiveForeground: Color(0xFFFFFFFF),
     border: Color(0xFFE4E4E7),
     input: Color(0xFFE4E4E7),
-    ring: Color(0xFF4F6DF5),
+    ring: Color(0xFF465BF0),
     success: Color(0xFF16A34A),
+    successForeground: Color(0xFF052E16),
     warning: Color(0xFFD97706),
+    warningForeground: Color(0xFF2D1B00),
     info: Color(0xFF2563EB),
   );
 
   /// 深色主题色板（同语义、不同取值；主色提亮保证暗底对比度）。
+  ///
+  /// destructiveForeground 白→深（EF4444 上白字仅 3.76:1，参照
+  /// primary 的「亮底深字」模式改 #180606 达 5.23:1）。
   static const AppColors dark = AppColors(
     brightness: Brightness.dark,
     background: Color(0xFF09090B),
@@ -150,12 +162,14 @@ class AppColors extends ThemeExtension<AppColors> {
     accent: Color(0xFF262B45),
     accentForeground: Color(0xFFB9C4FB),
     destructive: Color(0xFFEF4444),
-    destructiveForeground: Color(0xFFFFFFFF),
+    destructiveForeground: Color(0xFF180606),
     border: Color(0xFF27272A),
     input: Color(0xFF3F3F46),
     ring: Color(0xFF8B9DF9),
     success: Color(0xFF4ADE80),
+    successForeground: Color(0xFF0A2E14),
     warning: Color(0xFFFBBF24),
+    warningForeground: Color(0xFF3B2A05),
     info: Color(0xFF60A5FA),
   );
 
@@ -180,7 +194,9 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? input,
     Color? ring,
     Color? success,
+    Color? successForeground,
     Color? warning,
+    Color? warningForeground,
     Color? info,
   }) {
     return AppColors(
@@ -204,7 +220,9 @@ class AppColors extends ThemeExtension<AppColors> {
       input: input ?? this.input,
       ring: ring ?? this.ring,
       success: success ?? this.success,
+      successForeground: successForeground ?? this.successForeground,
       warning: warning ?? this.warning,
+      warningForeground: warningForeground ?? this.warningForeground,
       info: info ?? this.info,
     );
   }
@@ -223,23 +241,46 @@ class AppColors extends ThemeExtension<AppColors> {
       card: Color.lerp(card, other.card, t)!,
       cardForeground: Color.lerp(cardForeground, other.cardForeground, t)!,
       primary: Color.lerp(primary, other.primary, t)!,
-      primaryForeground:
-          Color.lerp(primaryForeground, other.primaryForeground, t)!,
+      primaryForeground: Color.lerp(
+        primaryForeground,
+        other.primaryForeground,
+        t,
+      )!,
       secondary: Color.lerp(secondary, other.secondary, t)!,
-      secondaryForeground:
-          Color.lerp(secondaryForeground, other.secondaryForeground, t)!,
+      secondaryForeground: Color.lerp(
+        secondaryForeground,
+        other.secondaryForeground,
+        t,
+      )!,
       muted: Color.lerp(muted, other.muted, t)!,
       mutedForeground: Color.lerp(mutedForeground, other.mutedForeground, t)!,
       accent: Color.lerp(accent, other.accent, t)!,
-      accentForeground: Color.lerp(accentForeground, other.accentForeground, t)!,
+      accentForeground: Color.lerp(
+        accentForeground,
+        other.accentForeground,
+        t,
+      )!,
       destructive: Color.lerp(destructive, other.destructive, t)!,
-      destructiveForeground:
-          Color.lerp(destructiveForeground, other.destructiveForeground, t)!,
+      destructiveForeground: Color.lerp(
+        destructiveForeground,
+        other.destructiveForeground,
+        t,
+      )!,
       border: Color.lerp(border, other.border, t)!,
       input: Color.lerp(input, other.input, t)!,
       ring: Color.lerp(ring, other.ring, t)!,
       success: Color.lerp(success, other.success, t)!,
+      successForeground: Color.lerp(
+        successForeground,
+        other.successForeground,
+        t,
+      )!,
       warning: Color.lerp(warning, other.warning, t)!,
+      warningForeground: Color.lerp(
+        warningForeground,
+        other.warningForeground,
+        t,
+      )!,
       info: Color.lerp(info, other.info, t)!,
     );
   }
@@ -286,8 +327,9 @@ class AppColors extends ThemeExtension<AppColors> {
       scrim: const Color(0xFF000000),
       // inverse 系列用于 SnackBar 等反转组件：取对侧亮度的表面色。
       inverseSurface: isLight ? dark.card : light.secondary,
-      onInverseSurface:
-          isLight ? dark.cardForeground : light.secondaryForeground,
+      onInverseSurface: isLight
+          ? dark.cardForeground
+          : light.secondaryForeground,
       inversePrimary: isLight ? dark.primary : light.primary,
     );
   }
