@@ -1,4 +1,4 @@
-# CI：静态检查 + 全量测试（与 AGENTS.md / README.md 的本地验证标准一致）。
+# CI：格式检查 + 代码生成一致性 + 静态检查 + 全量测试。
 # SDK 版本由 .fvmrc 锁定（与本地 FVM 一致），故无需在 CI 中安装 FVM。
 name: CI
 
@@ -24,8 +24,21 @@ jobs:
           flutter-version-file: .fvmrc
           cache: true
 
-      - name: 安装依赖
-        run: flutter pub get
+      - name: 安装依赖（严格按 lockfile）
+        run: flutter pub get --enforce-lockfile
+
+      - name: 手写 Dart 格式检查（不写文件）
+        shell: bash
+        run: |
+          find lib test -type f -name '*.dart' ! -name '*.g.dart' ! -name '*.freezed.dart' -print0 |
+            xargs -0 dart format --output=none --set-exit-if-changed
+
+      # 生成文件已入库：重新生成后 diff 应为空，
+      # 防止修改模型后忘记跑 build_runner 导致提交与生成产物漂移。
+      - name: 代码生成一致性检查
+        run: |
+          dart run build_runner build --delete-conflicting-outputs
+          git diff --exit-code -- '*.g.dart' '*.freezed.dart'
 
       # 必须用 dart analyze：flutter analyze 不会加载 riverpod_lint 插件。
       # --fatal-infos：info 级也视为失败，与「0 issues」标准一致。

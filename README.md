@@ -60,30 +60,40 @@ fvm flutter run --dart-define-from-file=env/prod.json
 
 ### 命令行：一键脚本
 
-[scripts/run.sh](scripts/run.sh) 自动完成全流程：检测目标模拟器是否已启动（`xcrun simctl list`）→ 未启动则 `boot` 并用 `bootstatus` 阻塞等待系统就绪 → 打开 Simulator 窗口 → 按环境执行 `fvm flutter run -d ... --dart-define-from-file=...`：
+[scripts/run.sh](scripts/run.sh) 自动完成全流程：检测目标模拟器是否已启动 → 未启动则后台启动并阻塞等待系统就绪（iOS 用 `simctl bootstatus`，Android 轮询 `sys.boot_completed`）→ 按环境执行 `fvm flutter run -d ... --dart-define-from-file=...`：
 
 ```bash
-./scripts/run.sh              # dev 环境（缺省）
-./scripts/run.sh staging      # staging 环境
-./scripts/run.sh prod         # prod 环境
+./scripts/run.sh                   # dev + iOS 模拟器（macOS 缺省）
+./scripts/run.sh staging           # staging + iOS
+./scripts/run.sh android           # dev + Android 模拟器
+./scripts/run.sh android staging   # Android + staging（环境与平台参数顺序任意、均可省略）
 
-# 目标模拟器缺省 iPhone 17 Pro，可用环境变量覆盖：
-SIMULATOR="iPhone 16e" ./scripts/run.sh dev
+# 目标设备可用环境变量覆盖：
+SIMULATOR="iPhone 16e" ./scripts/run.sh dev       # iOS 模拟器名（缺省 iPhone 17 Pro）
+AVD="Pixel_7_Pro" ./scripts/run.sh android dev    # Android AVD 名（缺省取列表第一个）
 ```
 
+- 脚本自动定位项目根目录，从其他目录通过脚本路径调用也能正确找到环境文件；
 - 环境参数白名单 dev / staging / prod（对应 `env/*.json`），拼错直接报错退出，不静默回落；
-- 模拟器名不存在时列出全部可用设备便于修正；
-- 仅 macOS 支持模拟器流程（依赖 `xcrun simctl`）；非 macOS 会跳过模拟器、由 flutter 自动选择已连接设备。
+- iOS 依赖 `xcrun simctl`（仅 macOS），模拟器名不存在时列出全部可用设备便于修正；
+- Android 依次探测 `ANDROID_HOME` / `ANDROID_SDK_ROOT` / `~/Library/Android/sdk` / `~/Android/Sdk` 定位 emulator 与 adb；AVD 不存在时列出全部可用 AVD；启动失败或超时会打印 emulator 日志末尾便于排查；
+- 非 macOS 且未指定平台时跳过模拟器启动，由 flutter 自动选择已连接设备。
 
 ### 命令行：手动等价命令
 
 不使用脚本时的等价手动流程：
 
 ```bash
+# iOS
 xcrun simctl boot "iPhone 17 Pro"            # 启动模拟器
 xcrun simctl bootstatus "iPhone 17 Pro" -b   # 阻塞等待系统就绪
 open -a Simulator                            # 显示模拟器窗口
 fvm flutter run -d "iPhone 17 Pro" --dart-define-from-file=env/dev.json
+
+# Android
+~/Library/Android/sdk/emulator/emulator -avd Pixel_7_Pro &   # 后台启动 AVD
+adb -s emulator-5554 shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done'
+fvm flutter run -d emulator-5554 --dart-define-from-file=env/dev.json
 ```
 
 ### VSCode / IDE 调试
@@ -131,8 +141,8 @@ flutter_repo/
 │   ├── core/                     # config / logging 测试
 │   ├── data/                     # models / services 测试
 │   └── ui/                       # theme 与 user feature 测试
-├── .github/workflows/            # CI：push / PR 自动执行 analyze + test
-├── scripts/                      # 命令行辅助脚本（run.sh：自动启动模拟器 + 按环境一键运行）
+├── .github/workflows/            # CI：格式、代码生成一致性、analyze + test
+├── scripts/                      # run.sh：一键运行；check.sh：格式检查 + analyze + test
 ├── .qoder/                       # AI 工具链（skills / rules）
 ├── .vscode/                      # 调试配置模板（launch.example.jsonc）
 ├── .mcp.json                     # Dart MCP server 接入
@@ -168,14 +178,16 @@ flutter_repo/
 
 ### 组合根（Composition Root）
 
-所有需要异步初始化的依赖（SharedPreferences 等）在 [main.dart](lib/main.dart) 中一次性完成创建，再通过 `ProviderScope.overrides` 注入容器；业务层零感知初始化细节：
+[main.dart](lib/main.dart) 的 `bootstrap` 先校验环境配置，再初始化 SharedPreferences，成功后通过 `ProviderScope.overrides` 注入同一份配置和存储实例；业务层零感知初始化细节。任一步失败时显示独立的启动失败页，支持重试且阻止重复点击，不展示底层异常详情：
 
 ```dart
+final config = AppConfig.fromEnvironment();
 final sharedPreferences = await SharedPreferences.getInstance();
 
 runApp(
   ProviderScope(
     overrides: [
+      appConfigProvider.overrideWithValue(config),
       sharedPreferencesProvider.overrideWithValue(sharedPreferences),
       // userRepositoryProvider.overrideWithValue(FakeUserRepository()), // 测试切换
     ],
@@ -188,10 +200,10 @@ runApp(
 
 [data/exceptions/app_exception.dart](lib/data/exceptions/app_exception.dart) 定义 sealed class 异常：Repository 负责把底层技术异常（DioException、存储异常等）转换为语义化的 `AppException`，UI 层 switch 处理时编译器保证穷举不遗漏：
 
-- `NetworkException` — 网络不可用 / 超时 / 5xx
+- `NetworkException` — 网络连接失败 / 超时
 - `NotFoundException` — 资源不存在（404）
 - `CacheException` — 本地缓存读写失败
-- `UnknownException` — 未预期异常
+- `UnknownException` — 其他 HTTP 错误（含 5xx）、响应解析失败及未预期异常
 
 > 防护约定：HTTP 200 但响应体为空时，Service 层直接抛 `NotFoundException`（视为资源不存在）——避免 `response.data!` 空断言抛出 Error 形态异常、绕过 Repository 的异常映射把技术细节泄露给 UI 层。
 
@@ -200,7 +212,7 @@ runApp(
 [main.dart](lib/main.dart) 在 runApp 前挂载全局兜底处理（越早挂载漏网越少），未捕获异常统一收敛到 AppLogger（`f` 级）：
 
 - `FlutterError.onError` — Framework 异常（build / layout 抛错等），记录后仍调 `presentError` 保持 debug 下红屏行为；
-- `PlatformDispatcher.instance.onError` — Zone 之外未捕获的异步异常，返回 `true` 抑制控制台噪音。
+- `PlatformDispatcher.instance.onError` — 未被 Zone 等处理的根 isolate 异步异常；非 release 返回 `true` 抑制重复输出，release 返回 `false` 交还平台默认处理，保留崩溃痕迹。
 
 > 该处是未来接入 Crashlytics / Sentry 的唯一挂点：替换内部上报实现即可，全项目调用点零改动。
 
@@ -301,7 +313,9 @@ if (context.isDarkMode) { ... }
 
 - 环境文件入库，但**只放非敏感配置**（baseUrl、超时）；
 - **API Key / Secret 禁止走 dart-define**（会进编译产物被提取），由后端代理签发；
-- 不传任何 dart-define 直接运行时，安全回落 dev + 公共演示 API，工程开箱可跑；
+- 不传任何 dart-define 直接运行时，安全回落 dev + 公共演示 API，工程开箱可跑；未知 `APP_ENV` 仍回落 dev；
+- `API_BASE_URL` 必须是主机非空的绝对 HTTP(S) URL，不含空白，显式端口为 1–65535；两项超时必须是正整数毫秒；
+- 非法配置在启动时抛出带配置键名、不含原始值的 `FormatException` 并进入启动失败页；编译期配置错误需修正配置后重新运行，点击重试不会改变编译期值；
 - 启动时 main.dart 打印当前环境与 baseUrl 便于确认。
 
 ## 路由设计
@@ -329,7 +343,7 @@ fvm flutter test
 | `test/data/models/` | 模型 JSON 序列化 |
 | `test/data/services/` | UserApiService 响应解析与空响应防护 |
 | `test/ui/core/theme/` | AppColors lerp/映射、ThemeMode 持久化 |
-| `test/ui/features/user/` | ViewModel 状态流转 |
+| `test/ui/features/user/` | ViewModel 状态流转、列表空态与刷新交互 |
 
 ## 静态检查与 Lint
 
@@ -344,20 +358,32 @@ fvm flutter test
 
 > **注意**：`fvm flutter analyze` 不会加载 riverpod_lint 插件，完整检查必须用 `fvm dart analyze`。
 
-提交前验证标准（全绿才可提交；CI 会自动执行同样检查，见 `.github/workflows/ci.yaml`）：
+提交前执行一键检查（需要先安装项目依赖）：
 
 ```bash
-fvm dart analyze   # 0 issues
-fvm flutter test   # all passed
+./scripts/check.sh
 ```
+
+[scripts/check.sh](scripts/check.sh) 依次执行手写 Dart 格式检查、`fvm dart analyze --fatal-infos` 和 `fvm flutter test`，任一步失败立即退出。脚本自动定位项目根目录，检查不会自动格式化文件或运行代码生成。
+
+格式范围为 `lib/`、`test/` 下的 Dart 文件，排除 `*.g.dart`、`*.freezed.dart`。需要修复格式时执行：
+
+```bash
+find lib test -type f -name '*.dart' ! -name '*.g.dart' ! -name '*.freezed.dart' -print0 |
+  xargs -0 fvm dart format
+```
+
+修改模型后仍需先手动执行 build_runner，见[常用命令速查](#常用命令速查)。
 
 ## 持续集成（CI）
 
-[.github/workflows/ci.yaml](.github/workflows/ci.yaml) 与本地验证标准完全一致，push 到 main/master 或提 PR 时自动执行：
+[.github/workflows/ci.yaml](.github/workflows/ci.yaml) 在 push 到 main/master 或提 PR 时自动执行：
 
-- **SDK 版本直接读 `.fvmrc`**（subosito/flutter-action），CI 无需安装 FVM，与本地版本天然一致；
+- **SDK 版本直接读 `.fvmrc`**（subosito/flutter-action），CI 无需安装 FVM，与本地版本一致；
 - **并发去重**：同一分支 / PR 的旧运行自动取消，节省 CI 时长；
-- **门禁**：`dart analyze --fatal-infos`（info 级也视为失败，对齐「0 issues」标准）+ `flutter test` 全量通过。
+- **依赖与生成产物**：严格按 lockfile 安装依赖，重新执行 build_runner 并检查已跟踪的生成文件无差异；
+- **格式门禁**：与 `check.sh` 相同的手写 Dart 范围，仅检查、不写文件；
+- **分析与测试**：`dart analyze --fatal-infos`（info 级也视为失败，对齐「0 issues」标准）+ `flutter test` 全量通过。
 
 ## AI 协作工具链
 
@@ -380,7 +406,8 @@ fvm flutter pub get                                        # 安装依赖
 fvm flutter pub add <包>                                    # 添加依赖
 fvm flutter run --dart-define-from-file=env/dev.json       # 指定环境运行
 fvm flutter pub run build_runner build --delete-conflicting-outputs  # 改 freezed/json 模型后必须执行
-fvm dart analyze                                           # 静态检查（含 riverpod_lint）
+./scripts/check.sh                                        # 格式检查 + 静态分析 + 全量测试
+fvm dart analyze --fatal-infos                             # 静态检查（含 riverpod_lint）
 fvm flutter test                                           # 全量测试
 ```
 
