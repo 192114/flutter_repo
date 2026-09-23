@@ -18,19 +18,31 @@ import 'package:flutter_repo/data/repositories/user_repository.dart';
 /// ```
 class FakeUserRepository implements UserRepository {
   FakeUserRepository({List<User>? users, Set<int>? favoriteIds})
-      : _users = users ?? _defaultUsers,
-        _favoriteIds = favoriteIds ?? <int>{};
+    : _users = users ?? _defaultUsers,
+      _favoriteIds = favoriteIds ?? <int>{};
 
   static const List<User> _defaultUsers = [
-    User(id: 1, name: 'Leanne Graham', username: 'Bret',
-        email: 'Sincere@april.biz',
-        company: Company(name: 'Romaguera-Crona')),
-    User(id: 2, name: 'Ervin Howell', username: 'Antonette',
-        email: 'Shanna@melissa.tv',
-        company: Company(name: 'Deckow-Crist')),
-    User(id: 3, name: 'Clementine Bauch', username: 'Samantha',
-        email: 'Nathan@yesenia.net',
-        company: Company(name: 'Romaguera-Jacobson')),
+    User(
+      id: 1,
+      name: 'Leanne Graham',
+      username: 'Bret',
+      email: 'Sincere@april.biz',
+      company: Company(name: 'Romaguera-Crona'),
+    ),
+    User(
+      id: 2,
+      name: 'Ervin Howell',
+      username: 'Antonette',
+      email: 'Shanna@melissa.tv',
+      company: Company(name: 'Deckow-Crist'),
+    ),
+    User(
+      id: 3,
+      name: 'Clementine Bauch',
+      username: 'Samantha',
+      email: 'Nathan@yesenia.net',
+      company: Company(name: 'Romaguera-Jacobson'),
+    ),
   ];
 
   final List<User> _users;

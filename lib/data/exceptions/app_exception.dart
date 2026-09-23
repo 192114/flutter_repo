@@ -16,7 +16,9 @@ sealed class AppException implements Exception {
   String toString() => message;
 }
 
-/// 网络不可用 / 超时 / 服务器 5xx。
+/// 网络不可用 / 超时。
+///
+/// 服务器 5xx 属服务端故障，映射为 [UnknownException]。
 final class NetworkException extends AppException {
   const NetworkException([super.message = '网络连接失败，请检查网络后重试']);
 }

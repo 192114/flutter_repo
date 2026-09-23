@@ -19,11 +19,11 @@ abstract class UserDetailUiState with _$UserDetailUiState {
 ///
 /// - family 参数 [userId] 通过构造函数注入；
 /// - 同一 userId 的多个观察者共享同一状态实例；
-/// - 打开不同用户的详情页时，参数变化自动重建。
-final userDetailViewModelProvider =
-    AsyncNotifierProvider.family<UserDetailViewModel, UserDetailUiState, int>(
-  UserDetailViewModel.new,
-);
+/// - autoDispose：离开详情页即释放，重新进入按 ID 重新加载。
+final userDetailViewModelProvider = AsyncNotifierProvider.autoDispose
+    .family<UserDetailViewModel, UserDetailUiState, int>(
+      UserDetailViewModel.new,
+    );
 
 class UserDetailViewModel extends AsyncNotifier<UserDetailUiState> {
   UserDetailViewModel(this.userId);
@@ -35,30 +35,55 @@ class UserDetailViewModel extends AsyncNotifier<UserDetailUiState> {
 
   @override
   Future<UserDetailUiState> build() async {
-    // 并行请求详情与收藏状态（Dart 3 record .wait 扩展）。
-    final (user, favorites) = await (
-      _repository.getUser(userId),
-      _repository.getFavoriteIds(),
-    ).wait;
-    return UserDetailUiState(
-      user: user,
-      isFavorite: favorites.contains(userId),
-    );
+    try {
+      // 并行请求详情与收藏状态（Dart 3 record .wait 扩展）。
+      final (user, favorites) = await (
+        _repository.getUser(userId),
+        _repository.getFavoriteIds(),
+      ).wait;
+      return UserDetailUiState(
+        user: user,
+        isFavorite: favorites.contains(userId),
+      );
+    } on ParallelWaitError catch (error) {
+      // .wait 会把子 Future 的异常包装成 ParallelWaitError；
+      // 解包还原原始异常，维持 Repository 的 AppException 契约。
+      final asyncError = error.errors.$1 ?? error.errors.$2;
+      if (asyncError == null) {
+        rethrow;
+      }
+      Error.throwWithStackTrace(asyncError.error, asyncError.stackTrace);
+    }
   }
 
+  bool _favoriteWriteInFlight = false;
+
   /// 切换收藏：乐观更新（先改 UI，持久化失败再回滚）。
+  ///
+  /// - 写入进行中忽略重复点击，防止并发写入互相覆盖 / 回滚；
+  /// - 成功后以 Repository 返回的收藏集合为准（权威状态）；
+  /// - autoDispose 下离开页面后写入完成，不更新已销毁的状态。
   Future<void> toggleFavorite() async {
     final current = state.value;
-    if (current == null) {
+    if (current == null || _favoriteWriteInFlight) {
       return;
     }
-
+    _favoriteWriteInFlight = true;
     state = AsyncData(current.copyWith(isFavorite: !current.isFavorite));
     try {
-      await _repository.toggleFavorite(current.user.id);
+      final favorites = await _repository.toggleFavorite(current.user.id);
+      if (ref.mounted) {
+        state = AsyncData(
+          current.copyWith(isFavorite: favorites.contains(userId)),
+        );
+      }
     } on Exception {
       // 持久化失败：回滚到更新前的状态。
-      state = AsyncData(current);
+      if (ref.mounted) {
+        state = AsyncData(current);
+      }
+    } finally {
+      _favoriteWriteInFlight = false;
     }
   }
 }

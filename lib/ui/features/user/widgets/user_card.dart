@@ -56,17 +56,15 @@ class UserCard extends StatelessWidget {
                       '${user.username} · ${user.email}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: textTheme.bodySmall
-                          ?.copyWith(color: colors.mutedForeground),
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colors.mutedForeground,
+                      ),
                     ),
                   ],
                 ),
               ),
               const SizedBox(width: 8),
-              Icon(
-                Icons.chevron_right,
-                color: colors.mutedForeground,
-              ),
+              Icon(Icons.chevron_right, color: colors.mutedForeground),
             ],
           ),
         ),

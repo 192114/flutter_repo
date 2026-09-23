@@ -23,15 +23,11 @@ final dioProvider = Provider<Dio>((ref) {
     ),
   );
 
-  dio.interceptors.add(
-    AuthInterceptor(ref.watch(tokenStorageServiceProvider)),
-  );
+  dio.interceptors.add(AuthInterceptor(ref.watch(tokenStorageServiceProvider)));
 
   // 网络日志：统一走 AppLogger（debug 分级输出 / release 自动静默），
   // 替代原 LogInterceptor 的 print 系直出。
-  dio.interceptors.add(
-    DioLoggingInterceptor(ref.watch(appLoggerProvider)),
-  );
+  dio.interceptors.add(DioLoggingInterceptor(ref.watch(appLoggerProvider)));
 
   // Provider 销毁时释放底层 HttpClient 连接。
   ref.onDispose(dio.close);

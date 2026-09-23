@@ -44,11 +44,13 @@ abstract class UserListUiState with _$UserListUiState {
 /// - 数据获取全部委托给 [UserRepository]，ViewModel 不感知 Dio / SharedPreferences。
 final userListViewModelProvider =
     AsyncNotifierProvider<UserListViewModel, UserListUiState>(
-  UserListViewModel.new,
-);
+      UserListViewModel.new,
+    );
 
 class UserListViewModel extends AsyncNotifier<UserListUiState> {
   UserRepository get _repository => ref.read(userRepositoryProvider);
+
+  Future<void>? _refreshRequest;
 
   /// 首次构建：从 Repository 加载用户列表。
   @override
@@ -57,15 +59,34 @@ class UserListViewModel extends AsyncNotifier<UserListUiState> {
     return UserListUiState(users: users);
   }
 
-  /// 下拉刷新：重新拉取数据，但保留用户已输入的搜索词。
-  Future<void> refresh() async {
-    // Riverpod 3.x：`value` 即旧版的 valueOrNull（可空，不抛错）。
-    final previousQuery = state.value?.query ?? '';
+  /// 下拉刷新：重新拉取数据。
+  ///
+  /// - 复用进行中的请求（重叠刷新不重复发网络请求）；
+  /// - 成功后合并「等待期间」用户输入的最新搜索词，而非覆盖；
+  /// - 失败时若已有数据则保留现状（下拉刷新失败不清空列表）。
+  Future<void> refresh() => _refreshRequest ??= _refresh();
+
+  Future<void> _refresh() async {
     try {
       final users = await _repository.getUsers();
-      state = AsyncData(UserListUiState(users: users, query: previousQuery));
+      if (!ref.mounted) {
+        return;
+      }
+      // Riverpod 3.x：`value` 即旧版的 valueOrNull（可空，不抛错）。
+      // 此时读到的是等待期间 onQueryChanged 写入的最新搜索词。
+      state = AsyncData(
+        UserListUiState(users: users, query: state.value?.query ?? ''),
+      );
     } on Exception catch (error, stackTrace) {
-      state = AsyncError(error, stackTrace);
+      if (!ref.mounted) {
+        return;
+      }
+      if (state.value == null) {
+        // 无数据可保留（如错误页重试再次失败）：维持错误态。
+        state = AsyncError(error, stackTrace);
+      }
+    } finally {
+      _refreshRequest = null;
     }
   }
 

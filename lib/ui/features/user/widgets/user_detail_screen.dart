@@ -32,10 +32,22 @@ class UserDetailScreen extends ConsumerWidget {
               onToggleFavorite: viewModel.toggleFavorite,
             ),
             const SizedBox(height: 16),
-            _InfoTile(icon: Icons.badge, label: '用户名', value: state.user.username),
-            _InfoTile(icon: Icons.alternate_email, label: '邮箱', value: state.user.email),
+            _InfoTile(
+              icon: Icons.badge,
+              label: '用户名',
+              value: state.user.username,
+            ),
+            _InfoTile(
+              icon: Icons.alternate_email,
+              label: '邮箱',
+              value: state.user.email,
+            ),
             _InfoTile(icon: Icons.phone, label: '电话', value: state.user.phone),
-            _InfoTile(icon: Icons.language, label: '网站', value: state.user.website),
+            _InfoTile(
+              icon: Icons.language,
+              label: '网站',
+              value: state.user.website,
+            ),
             _InfoTile(
               icon: Icons.business,
               label: '公司',
@@ -85,8 +97,9 @@ class _ProfileHeader extends StatelessWidget {
               if (state.user.company?.name.isNotEmpty ?? false)
                 Text(
                   state.user.company!.name,
-                  style: textTheme.bodyMedium
-                      ?.copyWith(color: colors.mutedForeground),
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: colors.mutedForeground,
+                  ),
                 ),
             ],
           ),
@@ -94,9 +107,7 @@ class _ProfileHeader extends StatelessWidget {
         FilledButton.tonalIcon(
           // 交互事件全部转发给 ViewModel。
           onPressed: onToggleFavorite,
-          icon: Icon(
-            state.isFavorite ? Icons.favorite : Icons.favorite_border,
-          ),
+          icon: Icon(state.isFavorite ? Icons.favorite : Icons.favorite_border),
           label: Text(state.isFavorite ? '已收藏' : '收藏'),
         ),
       ],

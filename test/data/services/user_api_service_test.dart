@@ -50,8 +50,7 @@ void main() {
       expect(user.name, 'Leanne Graham');
     });
 
-    test('fetchUser 响应体为空时抛 NotFoundException（而非 Null check Error）',
-        () async {
+    test('fetchUser 响应体为空时抛 NotFoundException（而非 Null check Error）', () async {
       // JSON null 解码后 response.data 为 null（HTTP 仍为 200）。
       final service = buildService('null');
 

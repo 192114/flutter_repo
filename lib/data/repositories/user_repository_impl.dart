@@ -34,6 +34,14 @@ class UserRepositoryImpl implements UserRepository {
       // 语义层日志（拦截器已记录技术层 DioException，两者信息互补）。
       _logger.e('获取用户列表失败', error: exception);
       throw exception;
+    } on AppException {
+      // Service 层已语义化的异常（如空响应体 NotFound）直接透传。
+      rethrow;
+    } on Object catch (e, stackTrace) {
+      // 反序列化边界异常（字段缺失 / 类型不符抛出的是 TypeError，
+      // 不是 Exception，会绕过上面的捕获）：统一收敛为 UnknownException。
+      _logger.e('获取用户列表失败（响应解析异常）', error: e, stackTrace: stackTrace);
+      throw const UnknownException();
     }
   }
 
@@ -45,6 +53,11 @@ class UserRepositoryImpl implements UserRepository {
       final exception = _toAppException(e);
       _logger.e('获取用户(id: $id)详情失败', error: exception);
       throw exception;
+    } on AppException {
+      rethrow;
+    } on Object catch (e, stackTrace) {
+      _logger.e('获取用户(id: $id)详情失败（响应解析异常）', error: e, stackTrace: stackTrace);
+      throw const UnknownException();
     }
   }
 
@@ -74,8 +87,7 @@ class UserRepositoryImpl implements UserRepository {
       DioExceptionType.connectionError ||
       DioExceptionType.connectionTimeout ||
       DioExceptionType.receiveTimeout ||
-      DioExceptionType.sendTimeout =>
-        const NetworkException(),
+      DioExceptionType.sendTimeout => const NetworkException(),
       DioExceptionType.badResponse when e.response?.statusCode == 404 =>
         const NotFoundException(),
       _ => const UnknownException(),

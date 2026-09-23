@@ -7,7 +7,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 /// 由 [AuthInterceptor] 组合使用，向上层屏蔽具体存储实现。
 class TokenStorageService {
   TokenStorageService({FlutterSecureStorage? storage})
-      : _storage = storage ?? const FlutterSecureStorage();
+    : _storage = storage ?? const FlutterSecureStorage();
 
   static const String _tokenKey = 'auth_access_token';
 
