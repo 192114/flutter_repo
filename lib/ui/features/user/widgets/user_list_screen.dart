@@ -28,7 +28,14 @@ class UserListScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('用户列表'),
-        actions: const [ThemeModeMenu()],
+        actions: [
+          IconButton(
+            tooltip: '组件库',
+            onPressed: () => context.pushNamed(AppRoute.gallery.name),
+            icon: const Icon(Icons.widgets_outlined),
+          ),
+          const ThemeModeMenu(),
+        ],
       ),
       body: Column(
         children: [
@@ -47,10 +54,8 @@ class UserListScreen extends ConsumerWidget {
             child: AsyncValueView(
               value: asyncState,
               onRetry: viewModel.refresh,
-              data: (state) => _UserListView(
-                state: state,
-                onRefresh: viewModel.refresh,
-              ),
+              data: (state) =>
+                  _UserListView(state: state, onRefresh: viewModel.refresh),
             ),
           ),
         ],
@@ -70,33 +75,57 @@ class _UserListView extends StatelessWidget {
   Widget build(BuildContext context) {
     final users = state.filteredUsers;
 
-    if (users.isEmpty) {
-      return Center(
-        child: Text('没有匹配「${state.query}」的用户'),
-      );
-    }
-
     return RefreshIndicator(
       onRefresh: onRefresh,
-      child: ListView.separated(
-        // 保证内容不足一屏时仍可下拉刷新。
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        itemCount: users.length,
-        separatorBuilder: (_, _) => const SizedBox(height: 8),
-        itemBuilder: (context, index) {
-          final user = users[index];
-          return UserCard(
-            user: user,
-            // 页面跳转属于 View 副作用，允许在 View 层执行；
-            // 只传 ID，详情页自行加载数据（深链接友好）。
-            onTap: () => context.pushNamed(
-              AppRoute.userDetail.name,
-              pathParameters: {'id': user.id.toString()},
+      child: users.isEmpty
+          ? CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          state.users.isEmpty
+                              ? '暂无用户'
+                              : '没有匹配「${state.query}」的用户',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          state.users.isEmpty ? '下拉刷新试试' : '试试其他姓名或邮箱，或下拉刷新',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            )
+          : ListView.separated(
+              // 保证内容不足一屏时仍可下拉刷新。
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              itemCount: users.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 8),
+              itemBuilder: (context, index) {
+                final user = users[index];
+                return UserCard(
+                  user: user,
+                  // 页面跳转属于 View 副作用，允许在 View 层执行；
+                  // 只传 ID，详情页自行加载数据（深链接友好）。
+                  onTap: () => context.pushNamed(
+                    AppRoute.userDetail.name,
+                    pathParameters: {'id': user.id.toString()},
+                  ),
+                );
+              },
             ),
-          );
-        },
-      ),
     );
   }
 }
