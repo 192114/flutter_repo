@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'l10n/app_localizations.dart';
 import 'ui/core/router/app_router.dart';
 import 'ui/core/theme/app_theme.dart';
 import 'ui/core/theme/app_theme_mode.dart';
@@ -22,10 +23,24 @@ class App extends ConsumerWidget {
 
     return MaterialApp.router(
       title: 'Flutter Repo',
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: themeMode,
       routerConfig: router,
+      builder: (context, child) => Actions(
+        actions: {
+          EditableTextTapOutsideIntent:
+              CallbackAction<EditableTextTapOutsideIntent>(
+                onInvoke: (intent) {
+                  intent.focusNode.unfocus();
+                  return null;
+                },
+              ),
+        },
+        child: child!,
+      ),
       debugShowCheckedModeBanner: false,
     );
   }

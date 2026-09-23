@@ -1,0 +1,50 @@
+{
+  "@@locale": "en",
+  "cancel": "Cancel",
+  "confirm": "Confirm",
+  "acknowledge": "Got it",
+  "selectPlaceholder": "Please select",
+  "selectDate": "Select date",
+  "selectTime": "Select time",
+  "noOptions": "No options",
+  "startDate": "Start date",
+  "endDate": "End date",
+  "rangeStart": "Start",
+  "rangeEnd": "End",
+  "rangeStartEnd": "Start/End",
+  "today": "Today",
+  "loadFailed": "Unable to load. Please try again later.",
+  "retry": "Retry",
+  "success": "Success",
+  "failure": "Error",
+  "warning": "Warning",
+  "loading": "Loading",
+  "collapseMenu": "Collapse menu",
+  "deleteLabel": "Delete {label}",
+  "@deleteLabel": {
+    "description": "Accessible label for deleting a named tag.",
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "addImage": "Add image",
+  "uploadFailed": "Upload failed",
+  "retryUpload": "Retry upload",
+  "uploadedImage": "Uploaded image",
+  "previewImage": "Preview image",
+  "uploading": "Uploading",
+  "cropImage": "Crop image",
+  "cropFailed": "Unable to crop. Please try again.",
+  "imageLoadFailed": "Unable to load image",
+  "freeAspectRatio": "Free",
+  "rotateImage": "Rotate image",
+  "done": "Done",
+  "toastAnnouncement": "{status}: {message}",
+  "@toastAnnouncement": {
+    "description": "Accessible toast announcement including its status and caller-provided message.",
+    "placeholders": {
+      "status": { "type": "String" },
+      "message": { "type": "String" }
+    }
+  }
+}

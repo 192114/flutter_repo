@@ -31,10 +31,14 @@ dependencies:
   dio: ^5.11.1
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   flutter_riverpod: ^3.4.3
   flutter_secure_storage: ^11.1.1
   freezed_annotation: ^3.1.0
   go_router: ^18.0.1
+  image_picker: ^1.2.3
+  intl: ^0.20.3
   json_annotation: ^4.12.0
   logger: ^2.8.0
   shared_preferences: ^2.5.5
@@ -52,12 +56,15 @@ dev_dependencies:
   freezed: ^4.0.1
   json_serializable: ^6.14.1
   riverpod_lint: ^3.1.9
+  # 仅为测试注入可控 store（模拟落盘失败）；运行时依赖 shared_preferences 已含此接口。
+  shared_preferences_platform_interface: ^2.4.2
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
 # The following section is specific to Flutter packages.
 flutter:
+  generate: true
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
