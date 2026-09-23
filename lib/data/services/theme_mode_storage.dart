@@ -1,7 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'user_local_service.dart';
+import '../exceptions/app_exception.dart';
+import 'shared_preferences_provider.dart';
 
 /// 主题偏好本地存储：持久化用户选择的主题模式。
 ///
@@ -22,9 +23,15 @@ class ThemeModeStorage {
 
   /// 保存主题模式名。
   ///
-  /// 必须等待落盘完成，防止调用方拿到未持久化的状态。
+  /// `setString` 返回 false 表示落盘失败（此时插件已先行更新内存
+  /// 缓存）：先 reload 恢复缓存与磁盘一致，再上抛 [CacheException]，
+  /// 防止调用方误把未持久化当成功。
   Future<void> save(String modeName) async {
-    await _prefs.setString(_themeModeKey, modeName);
+    final persisted = await _prefs.setString(_themeModeKey, modeName);
+    if (!persisted) {
+      await _prefs.reload();
+      throw const CacheException();
+    }
   }
 }
 

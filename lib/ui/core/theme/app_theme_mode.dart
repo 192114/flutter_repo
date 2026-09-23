@@ -24,5 +24,6 @@ class ThemeModeNotifier extends Notifier<ThemeMode> {
 }
 
 /// 主题模式 Provider：app.dart 中 `themeMode: ref.watch(themeModeProvider)`。
-final themeModeProvider =
-    NotifierProvider<ThemeModeNotifier, ThemeMode>(ThemeModeNotifier.new);
+final themeModeProvider = NotifierProvider<ThemeModeNotifier, ThemeMode>(
+  ThemeModeNotifier.new,
+);

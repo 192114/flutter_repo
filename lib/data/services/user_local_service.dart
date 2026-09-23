@@ -1,16 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// SharedPreferences 实例 Provider。
-///
-/// 异步插件实例在 main.dart 的组合根中完成初始化，
-/// 再通过 `ProviderScope.overrides` 注入容器，
-/// 使依赖它的所有 Service 都能以同步方式使用。
-final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
-  throw UnimplementedError(
-    'sharedPreferencesProvider 必须在 main.dart 中通过 override 提供',
-  );
-});
+import '../exceptions/app_exception.dart';
+import 'shared_preferences_provider.dart';
 
 /// 本地存储服务：负责「收藏用户」等非敏感数据的持久化。
 ///
@@ -23,12 +15,30 @@ class UserLocalService {
   final SharedPreferences _prefs;
 
   /// 读取已收藏的用户 ID 集合。
+  ///
+  /// 历史数据损坏（类型不符 / 含非数字项）时降级为可解析的子集，
+  /// 不抛异常击穿边界——收藏是非关键数据，不应阻断页面加载。
   Set<int> readFavoriteIds() {
-    final ids = _prefs.getStringList(_favoritesKey) ?? const <String>[];
-    return ids.map(int.parse).toSet();
+    final List<String>? rawIds;
+    try {
+      rawIds = _prefs.getStringList(_favoritesKey);
+    } on TypeError {
+      return <int>{};
+    }
+    if (rawIds == null) {
+      return <int>{};
+    }
+    return {
+      for (final rawId in rawIds)
+        if (int.tryParse(rawId) case final int id) id,
+    };
   }
 
   /// 切换收藏状态，返回切换后的最新收藏集合。
+  ///
+  /// `setStringList` 返回 false 表示落盘失败（此时插件已先行更新内存
+  /// 缓存，await 完成不等于持久化成功）：先 reload 恢复缓存与磁盘
+  /// 一致，再上抛 [CacheException]，防止上层误把未持久化当成功。
   Future<Set<int>> toggleFavorite(int userId) async {
     final favorites = readFavoriteIds();
     if (favorites.contains(userId)) {
@@ -36,11 +46,14 @@ class UserLocalService {
     } else {
       favorites.add(userId);
     }
-    // 必须等待落盘完成，防止调用方拿到未持久化的状态。
-    await _prefs.setStringList(
+    final persisted = await _prefs.setStringList(
       _favoritesKey,
       favorites.map((id) => id.toString()).toList(),
     );
+    if (!persisted) {
+      await _prefs.reload();
+      throw const CacheException();
+    }
     return favorites;
   }
 }

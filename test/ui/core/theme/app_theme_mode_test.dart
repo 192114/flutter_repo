@@ -1,11 +1,15 @@
-// ThemeModeNotifier 单元测试：初始恢复、落盘优先、非法值回落。
+// ThemeModeNotifier 单元测试：初始恢复、落盘优先、非法值回落、落盘失败。
 
 import 'package:flutter/material.dart';
-import 'package:flutter_repo/data/services/user_local_service.dart';
+import 'package:flutter_repo/data/exceptions/app_exception.dart';
+import 'package:flutter_repo/data/services/shared_preferences_provider.dart';
 import 'package:flutter_repo/ui/core/theme/app_theme_mode.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_platform_interface.dart';
+
+import '../../../fakes/failing_shared_preferences_store.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -55,5 +59,26 @@ void main() {
     addTearDown(fresh.dispose);
 
     expect(fresh.read(themeModeProvider), ThemeMode.system);
+  });
+
+  test('落盘失败：上抛 CacheException 且保持当前模式', () async {
+    // 换用写入永远失败的 store，模拟磁盘写入失败。
+    SharedPreferences.setMockInitialValues({});
+    SharedPreferencesStorePlatform.instance = FailingWriteStore();
+    final failingPrefs = await SharedPreferences.getInstance();
+    final failing = ProviderContainer(
+      overrides: [sharedPreferencesProvider.overrideWithValue(failingPrefs)],
+    );
+    addTearDown(failing.dispose);
+
+    expect(failing.read(themeModeProvider), ThemeMode.system);
+    await expectLater(
+      failing.read(themeModeProvider.notifier).setMode(ThemeMode.dark),
+      throwsA(isA<CacheException>()),
+    );
+    // 落盘失败未更新状态。
+    expect(failing.read(themeModeProvider), ThemeMode.system);
+    // 未持久化（reload 后缓存与磁盘一致）。
+    expect(failingPrefs.getString('app_theme_mode'), isNull);
   });
 }

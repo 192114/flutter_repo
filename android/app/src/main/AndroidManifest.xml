@@ -1,4 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 网络请求基础权限：debug / profile 清单已声明，但不会合并进 release，
+         必须在 main 清单显式声明，否则正式包无法联网。 -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="flutter_repo"
         android:name="${applicationName}"
