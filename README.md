@@ -394,8 +394,8 @@ find lib test -type f -name '*.dart' ! -name '*.g.dart' ! -name '*.freezed.dart'
 | [AGENTS.md](AGENTS.md) | AI 协作强制约定：命令前缀、架构规则、技术栈声明（压制冲突技能）、环境与验证标准 |
 | [.mcp.json](.mcp.json) | Dart MCP server（`fvm dart mcp-server`）：支持运行中 App 的热重载、调试、 Flutter 工具链操作 |
 | `.qoder/rules/flutter-hot-reload.md` | 触发式规则：编辑 `lib/**` 下 Dart 文件后自动经 Dart MCP 触发热重载/热重启 |
-| `.qoder/skills/` | 26 个 Agent Skills：Dart 工程化（单测/覆盖率/静态分析/模式匹配等）、Flutter 架构/测试/布局、Riverpod 全套（providers/consumers/testing/auto-dispose/cancel）、设计工程（emil-design-eng） |
-| [skills-lock.json](skills-lock.json) | Skills 版本锁定（来源仓库 + 内容哈希），保证团队/CI 一致性 |
+| `.qoder/skills/` | 11 个精简版 Agent Skills：Dart（单测、模式匹配、依赖冲突处理）、Flutter（组件测试、组件预览、响应式布局、布局排错）、Riverpod（providers/consumers/testing/auto-dispose） |
+| [skills-lock.json](skills-lock.json) | Skills 来源与内容哈希清单，与保留的技能目录同步维护 |
 
 > Skills 内容与项目技术栈声明的冲突处理规则：以 AGENTS.md 为准（如本项目用 dio 不用 http 包、用 freezed 不手写序列化）。
 
