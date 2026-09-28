@@ -1,6 +1,6 @@
 # flutter_repo
 
-基于 Flutter 的分层架构模板工程：**严格分层 + MVVM**，内置多环境配置、语义化主题（明暗切换）、统一日志、集中路由与 AI 协作工具链，开箱即用，可直接作为新项目的脚手架。
+基于 Flutter 的分层架构模板工程：**严格分层 + MVVM**，内置中英文本地化、语义化主题（明暗切换）、一套移动端通用组件库与 Gallery 组件展示页、图片上传与裁剪流程、统一日志、集中路由与 AI 协作工具链，开箱即用，可直接作为新项目的脚手架。
 
 ## 目录
 
@@ -10,6 +10,9 @@
 - [项目结构](#项目结构)
 - [架构设计](#架构设计)
 - [主题与配色](#主题与配色)
+- [品牌与原生启动页](#品牌与原生启动页)
+- [本地化](#本地化)
+- [通用组件库与 Gallery](#通用组件库与-gallery)
 - [日志设计](#日志设计)
 - [多环境配置](#多环境配置)
 - [路由设计](#路由设计)
@@ -28,9 +31,11 @@
 | 网络请求 | `dio` | 全局单实例 `dioProvider`，拦截器统一装配 |
 | JSON 序列化 | `freezed` + `json_serializable` + `build_runner` | 不可变模型，代码生成 |
 | 导航 | `go_router` | 集中声明路由，页面间只传 ID |
+| 本地化 | `flutter_localizations` + `intl`（gen-l10n） | 中英双语 arb，中文优先 |
 | 日志 | `logger`（封装为 `AppLogger`） | 全项目唯一日志出口 |
 | 本地存储 | `shared_preferences` | 主题模式等非敏感持久化 |
 | 安全存储 | `flutter_secure_storage` | Token 等敏感值 |
+| 图片选择 | `image_picker` | 上传与裁剪流程的选图入口 |
 | 模型不可变 | `freezed` | copyWith / == / pattern matching 支持 |
 
 > 以上选型为项目强制约定（详见 [AGENTS.md](AGENTS.md)）：禁止引入 http、bloc/getx/provider、手写 fromJson、`print` 等替代方案。
@@ -51,6 +56,8 @@ fvm flutter run --dart-define-from-file=env/dev.json
 fvm flutter run --dart-define-from-file=env/staging.json
 fvm flutter run --dart-define-from-file=env/prod.json
 ```
+
+启动后首屏为用户列表页；AppBar 右侧「组件库」图标进入 [Gallery 组件展示页](#通用组件库与-gallery)，主题菜单可运行时切换明暗。
 
 日常开发推荐一键脚本或 IDE 调试（含热重载说明），见 [运行与调试](#运行与调试)。
 
@@ -117,31 +124,34 @@ fvm flutter run -d emulator-5554 --dart-define-from-file=env/dev.json
 ```
 flutter_repo/
 ├── env/                          # 多环境配置（dev / staging / prod，编译期注入）
+├── l10n.yaml                     # gen-l10n 配置（arb 目录、中文优先）
 ├── lib/
-│   ├── main.dart                 # 入口：组合根（异步依赖初始化 + Provider overrides）
-│   ├── app.dart                  # 根 Widget：MaterialApp.router + 主题模式接入
+│   ├── main.dart                 # 入口：组合根（全局错误处理 + bootstrap + Provider overrides）
+│   ├── app.dart                  # 根 Widget：MaterialApp.router + 主题模式 + l10n 装配
 │   ├── core/                     # 横切关注点（与业务无关）
 │   │   ├── config/               # 多环境配置：AppEnvironment + AppConfig(freezed)
 │   │   └── logging/              # 统一日志：AppLogger + DioLoggingInterceptor
 │   ├── data/                     # 数据层
 │   │   ├── models/               # freezed 不可变模型（+ json_serializable）
 │   │   ├── repositories/         # 抽象 Repository + 生产实现（*_impl.dart）
-│   │   ├── services/             # dio_client / api services / 本地与安全存储
+│   │   ├── services/             # dio_client / api / 本地与安全存储 / 裁剪会话
 │   │   └── exceptions/           # sealed AppException 异常体系
+│   ├── l10n/                     # gen-l10n 产物（入库）：AppLocalizations + en/zh 实现
 │   └── ui/                       # UI 层（MVVM）
-│       ├── core/                 # 跨 feature 共享：router / theme / widgets
+│       ├── core/                 # 跨 feature 共享
 │       │   ├── router/           # go_router 集中路由
 │       │   ├── theme/            # 主题 token 与明暗切换
-│       │   └── widgets/          # 通用组件（AsyncValueView 等）
-│       └── features/<name>/      # 业务功能模块
-│           ├── view_model/       # Riverpod Notifier/AsyncNotifier
-│           └── widgets/          # dumb Widget（只渲染 + 回调）
-├── test/                         # 单元 / Widget 测试（目录结构镜像 lib/）
-│   ├── fakes/                    # Fake Repository（供测试替换）
-│   ├── core/                     # config / logging 测试
-│   ├── data/                     # models / services 测试
-│   └── ui/                       # theme 与 user feature 测试
-├── .github/workflows/            # CI：格式、代码生成一致性、analyze + test
+│       │   └── widgets/          # 通用组件库（表单/选择器/反馈/图片等，内嵌 Widget Preview）
+│       └── features/
+│           ├── user/             # 用户列表 / 详情（view_model/ + widgets/）
+│           ├── gallery/          # 组件库演示页（8 组 demo + 索引页）
+│           └── image_crop/       # 图片裁剪（会话式全屏编辑）
+├── test/                         # 单元 / Widget 测试（45 个文件，目录结构镜像 lib/）
+│   ├── fakes/                    # Fake / 可控 Repository、失败存储（供测试替换）
+│   ├── core/  data/              # config / logging / models / repositories / services
+│   ├── ui/core/widgets/          # 通用组件测试（渲染 / 交互 / 明暗 / 无障碍）
+│   └── ui/features/              # user / gallery / image_crop
+├── .github/workflows/ci.yaml     # CI：格式、代码生成一致性、analyze + test
 ├── scripts/                      # run.sh：一键运行；check.sh：格式检查 + analyze + test
 ├── .qoder/                       # AI 工具链（skills / rules）
 ├── .vscode/                      # 调试配置模板（launch.example.jsonc）
@@ -162,7 +172,7 @@ flutter_repo/
 ├─────────────────────────────────────────────┤
 │ Data Layer (data/)                          │
 │   Repository（抽象 + Impl）                   │
-│   Service（dio / api / storage）             │
+│   Service（dio / api / storage / 裁剪会话）   │
 │   Model（freezed）/ AppException（sealed）    │
 ├─────────────────────────────────────────────┤
 │ Core (core/)  横切关注点：config / logging    │
@@ -178,23 +188,24 @@ flutter_repo/
 
 ### 组合根（Composition Root）
 
-[main.dart](lib/main.dart) 的 `bootstrap` 先校验环境配置，再初始化 SharedPreferences，成功后通过 `ProviderScope.overrides` 注入同一份配置和存储实例；业务层零感知初始化细节。任一步失败时显示独立的启动失败页，支持重试且阻止重复点击，不展示底层异常详情：
+[main.dart](lib/main.dart) 的 `bootstrap` 先校验环境配置，再初始化 SharedPreferences，成功后通过 `ProviderScope.overrides` 注入同一份配置和存储实例；业务层零感知初始化细节：
 
 ```dart
-final config = AppConfig.fromEnvironment();
-final sharedPreferences = await SharedPreferences.getInstance();
+final config = loadConfig();
+final sharedPreferences = await loadPreferences();
 
 runApp(
   ProviderScope(
     overrides: [
       appConfigProvider.overrideWithValue(config),
       sharedPreferencesProvider.overrideWithValue(sharedPreferences),
-      // userRepositoryProvider.overrideWithValue(FakeUserRepository()), // 测试切换
     ],
     child: const App(),
   ),
 );
 ```
+
+初始化失败（配置校验不通过、存储不可用等）时进入独立的 [StartupFailureApp](lib/ui/core/widgets/startup_failure_app.dart) 启动失败页：展示可读的错误提示、支持重试且阻止重复点击，不泄露底层异常详情。重试会**新建 ProviderScope 容器**（避免在已有容器上改变 overrides 数量）并复用同一注入函数。`loadConfig` / `loadPreferences` 均为可注入参数，测试中配合 [test/fakes/failing_shared_preferences_store.dart](test/fakes/failing_shared_preferences_store.dart) 即可覆盖「初始化失败 → 重试恢复」路径。
 
 ### 异常体系
 
@@ -218,7 +229,7 @@ runApp(
 
 ### Riverpod 3.x 要点
 
-- family 参数经**构造函数注入**（`FamilyAsyncNotifier` 已移除）；
+- family 参数经**构造函数注入**（`FamilyAsyncNotifier` 已移除），如 [image_crop_view_model.dart](lib/ui/features/image_crop/view_model/image_crop_view_model.dart) 的 `NotifierProvider.autoDispose.family`；
 - 取可空值用 `state.value`（`valueOrNull` 已改名）；
 - 完整 3.x 迁移坑位记录见 [AGENTS.md](AGENTS.md) 与 [analysis_options.yaml](analysis_options.yaml) 中 riverpod_lint 插件配置。
 
@@ -230,8 +241,8 @@ runApp(
 
 | 文件 | 职责 |
 |---|---|
-| [app_colors.dart](lib/ui/core/theme/app_colors.dart) | `AppColors extends ThemeExtension`：21 个 shadcn 语义颜色字段（随主题变化，禁止 static const），light/dark 两套色板 |
-| [app_tokens.dart](lib/ui/core/theme/app_tokens.dart) | `AppSpacing`（4px 栅格）/ `AppRadius`：不随主题变化，保持 `static const` |
+| [app_colors.dart](lib/ui/core/theme/app_colors.dart) | `AppColors extends ThemeExtension`：22 个 shadcn 语义颜色字段（+ Brightness 标记，随主题变化，禁止 static const），light/dark 两套色板 |
+| [app_tokens.dart](lib/ui/core/theme/app_tokens.dart) | `AppSpacing`（4px 栅格，xs~xxxl）/ `AppRadius`（xs~xl + full，附 `circular()` 快捷）：不随主题变化，保持 `static const` |
 | [app_theme.dart](lib/ui/core/theme/app_theme.dart) | ThemeData 组装：AppColors 挂载到 `Theme.extensions`，Material 组件经 `toColorScheme()` 显式映射取色（零算法派生） |
 | [app_theme_mode.dart](lib/ui/core/theme/app_theme_mode.dart) | `ThemeModeNotifier`：system/light/dark 三态，切换时先落盘再更新状态 |
 | [theme_ext.dart](lib/ui/core/theme/theme_ext.dart) | 消费收口：`context.colors` / `context.isDarkMode` |
@@ -241,6 +252,7 @@ runApp(
 - **语义化命名**：background / muted / destructive / ring 等与设计稿 token 一一对应，填色零翻译；
 - **运行时换肤**：颜色是 ThemeExtension 实例而非常量，随 `themeMode` 切换全树自动换肤；
 - **lerp 必须逐字段实现**：明暗过渡期 Flutter 会对 ThemeExtension 插值，缺失会在过渡期抛异常；
+- **前景色成对取用**：primary / success / warning / destructive 等均配有对应 `*Foreground` 字段，组件按「底色 + 前景色」成对使用，保证两套主题下的文字对比度（无障碍）；
 - **持久化**：`ThemeModeStorage`（data 层）经 SharedPreferences 读写，非法值安全回落 system；
 - **暗色主色提亮**：保证暗底对比度。
 
@@ -248,20 +260,20 @@ runApp(
 
 | Token | Light | Dark |
 |---|---|---|
-| primary | `#4F6DF5` | `#8B9DF9` |
+| primary | `#465BF0` | `#8B9DF9` |
 | background | `#FFFFFF` | `#09090B` |
 | foreground | `#09090B` | `#FAFAFA` |
 | card | `#FFFFFF` | `#18181B` |
 | muted | `#F4F4F5` | `#27272A` |
 | mutedForeground | `#71717A` | `#A1A1AA` |
 | accent | `#EEF2FF` | `#262B45` |
-| destructive | `#DC2626` | `#EF4444` |
+| destructive | `#D11F1F` | `#EF4444` |
 | border | `#E4E4E7` | `#27272A` |
 | success | `#16A34A` | `#4ADE80` |
 | warning | `#D97706` | `#FBBF24` |
 | info | `#2563EB` | `#60A5FA` |
 
-> 品牌主色为 seed 蓝 `#4F6DF5`（暗色提亮为 `#8B9DF9`），中性色采用 shadcn zinc 系列。完整 21 字段见源码。
+> 品牌主色为 seed 蓝 `#465BF0`（暗色提亮为 `#8B9DF9`），中性色采用 shadcn zinc 系列。完整 22 字段（含各 `*Foreground`、input、ring）见源码。
 
 ### 使用方式
 
@@ -272,11 +284,91 @@ Container(color: colors.muted);
 
 // 间距 / 圆角：编译期常量，无需 context
 SizedBox(height: AppSpacing.lg);
-BorderRadius.circular(AppRadius.md);
+AppRadius.circular(AppRadius.md);
 
 // 判断暗色
 if (context.isDarkMode) { ... }
 ```
+
+## 品牌与原生启动页
+
+App 已完成品牌化（橙色小幽灵图标 + 橙黑暖光启动页），资源分布在两侧原生工程：
+
+- **iOS**：`ios/Runner/Assets.xcassets/AppIcon.appiconset`（1024 母版及全套尺寸）、`LaunchBackground` / `LaunchImage` imageset + `LaunchScreen.storyboard`；
+- **Android**：`mipmap-anydpi-v26` 自适应图标（前景 / 背景分层，附各密度位图）、`launch_background.xml` 及 Android 12+ SplashScreen 资源（`splash_foreground` / `splash_branding`，含横屏与 `values-night` 暗色变体）；
+- 系统栏颜色统一为 `splash_orange #FF6904`（`values/colors.xml`，供启动期状态栏 / 导航栏取色）。
+
+替换品牌时同步更新上述资源；Flutter 侧品牌色请继续走 [AppColors](lib/ui/core/theme/app_colors.dart) 语义 token，不要在业务代码写死颜色。
+
+## 本地化
+
+采用 Flutter 官方 gen-l10n 方案（`flutter_localizations` + `intl`），双语、中文优先：
+
+- 配置：[pubspec.yaml](pubspec.yaml) `flutter.generate: true` + 根目录 [l10n.yaml](l10n.yaml)（arb 目录 `lib/l10n`，模板 `app_en.arb`，`preferred-supported-locales: [zh]`）；
+- 文案源：[lib/l10n/app_en.arb](lib/l10n/app_en.arb) / [app_zh.arb](lib/l10n/app_zh.arb)，支持占位符参数（如 `deleteLabel {label}`、`toastAnnouncement {status} {message}`）；
+- 生成产物 `app_localizations*.dart` **已入库**，与 arb 同目录；
+- 装配：[app.dart](lib/app.dart) 在 `MaterialApp.router` 上挂 `localizationsDelegates` + `supportedLocales`；
+- 消费：通用组件的内置文案全部经 `AppLocalizations.of(context)!` 取用（含无障碍语义标签），不写死中文。
+
+新增文案流程：arb 加 key（en 模板 + zh 翻译）→ 执行 `fvm flutter gen-l10n` 重新生成（`pub get` / 构建时也会自动触发）→ 一并提交生成产物。
+
+## 通用组件库与 Gallery
+
+通用组件位于 [lib/ui/core/widgets/](lib/ui/core/widgets/)，是「带设计规范的可复用 UI 资产」；每个组件在 [Gallery](#gallery-组件展示页) 有对应演示页。
+
+### 设计约定
+
+- **dumb / 受控**：组件不发请求、不持有业务状态（如 `AppUploadImage` 的上传进度由外部驱动后重建列表项）；
+- **取色收口**：一律 `context.colors`；间距圆角走 `AppSpacing` / `AppRadius` 编译期常量；
+- **文案走 l10n**，内置文案均双语；
+- **明暗成对 @Preview**：按钮 / 输入 / 表单 / 选择 / 标签 / 下拉菜单 / 弹窗 / Toast / 上传等组件文件内嵌 Flutter 3.47 Widget Preview（`package:flutter/widget_previews.dart`），Light/Dark 各一个预览，可在 IDE 中直接查看。
+
+### 组件清单
+
+| 组件 | 能力 |
+|---|---|
+| `AppButton` | 5 变体（primary / secondary / outline / destructive / text）× 3 尺寸 |
+| `AppInput` | 标签 + 输入框 + 错误文案的受控输入 |
+| `AppFormCard` / `AppFormItem` | 卡片式表单分组（无分割线），label 支持 top / left 布局 |
+| `AppPickerField` 系列 | 表单集成选择字段：`AppPickerField`、`AppFormDateRangeField`、`AppPickerFormField<T>`、`AppDateRangeFormField` |
+| `AppRadio` / `AppCheckbox` / `AppSwitch` | 单选 / 多选 / 开关 |
+| `AppDatePicker.show` / `AppTimePicker.show` | 底部弹层滚轮选择（日期为年 / 月 / 日三列，中行高亮） |
+| `AppCalendarView` | 日历（滚动 / 月切换两种模式，支持日期范围选择） |
+| `AppPickerSheet` / `AppSelectorField` / `AppPickerWheel` | 通用数据选择器（单列 / 多列滚轮） |
+| `AppTag` | 实心 / 空心 × 5 色 × 3 尺寸，支持删除回调 |
+| `AppDropdownMenu` | Vant 风格顶部菜单栏，排序与筛选 |
+| `AppAlertDialog` / `AppConfirmDialog` | 弹窗（normal / destructive 意图） |
+| `FeedbackToast` / `ToastController` | 轻提示（success / error / warning / loading），新 Toast 替换旧的而非叠加 |
+| `AppEmpty` / `AppEmptyIllustration` | 空状态（内置 content / search / favorites 三种插图） |
+| `AppUploadImage` | 受控九宫格上传：uploading / success / failed 状态 + 进度 + 重试 |
+| `AppImageCropper` | 全屏裁剪：比例切换、旋转、双指缩放拖拽 |
+| `AsyncValueView<T>` | AsyncValue 统一三态（加载 / 错误重试 / 数据） |
+| `ThemeModeMenu` | AppBar 主题模式切换入口（system / light / dark） |
+| `StartupFailureApp` | 启动失败兜底页（重试） |
+
+### Gallery 组件展示页
+
+入口：用户列表页 AppBar「组件库」图标 → `/gallery` 索引页（8 组 demo，宽屏收敛 maxWidth 720）。每组一个独立路由的演示页，复用 `GallerySection` 分区卡片组织内容：
+
+| 分组 | 演示内容 | 路由 |
+|---|---|---|
+| 反馈组件 | Toast 轻提示与 Dialog 弹窗 | `/gallery/feedback` |
+| 下拉菜单 | Vant 风格顶部菜单栏，排序与筛选 | `/gallery/dropdown` |
+| 异步状态 | AsyncValueView 加载 / 错误 / 成功三态 | `/gallery/async-value` |
+| Design Token | 颜色、圆角与间距规范速查 | `/gallery/tokens` |
+| 表单组件 | 按钮、输入、选择控件与各类选择器 | `/gallery/form` |
+| 标签 | 实心 / 空心、可删除与三档尺寸 | `/gallery/tag` |
+| 图片上传 | 九宫格上传、进度状态与图片剪裁 | `/gallery/upload` |
+| 空状态 | 自定义图标、标题、描述与底部操作 | `/gallery/empty` |
+
+### 图片上传与裁剪流程
+
+跨 data / ui 的完整示例（Gallery「图片上传」页可体验）：
+
+1. `AppUploadImage` 触发 `onAdd` 回调，宿主经 image_picker 选图；
+2. [ImageCropSessionStore](lib/data/services/image_crop_session_store.dart)（data 层，Provider 持有）以 `create(bytes)` 建立内存会话并返回会话 ID——原图只在内存保留，路由不携带字节；
+3. 跳转 `/image-crop/:id`（只传 ID，深链安全；不支持恢复原图），`ImageCropScreen` + [ImageCropViewModel](lib/ui/features/image_crop/view_model/image_crop_view_model.dart)（`NotifierProvider.autoDispose.family`）按 ID 读取；
+4. `AppImageCropper` 完成 / 取消后 `complete` / `cancel` 释放会话；ViewModel dispose 时自动兜底释放，防内存泄漏。
 
 ## 日志设计
 
@@ -320,11 +412,14 @@ if (context.isDarkMode) { ... }
 
 ## 路由设计
 
-[lib/ui/core/router/app_router.dart](lib/ui/core/router/app_router.dart) 集中声明全部路由（`goRouterProvider`）：
+[lib/ui/core/router/app_router.dart](lib/ui/core/router/app_router.dart) 集中声明全部路由（`goRouterProvider`，`AppRoute` 枚举共 12 项，`initialLocation: /users`）：
 
 - 路由名收敛为 `AppRoute` 枚举，杜绝魔法字符串；
-- **页面间只传 ID 不传对象**（如 `/users/:id`），天然支持深链接与状态恢复；
+- **页面间只传 ID 不传对象**（如 `/users/:id`、`/image-crop/:id`），天然支持深链接与状态恢复；
+- `/users/:id` 对外部来源的 ID 做 `int.tryParse` 兜底：非法值（如 `/users/abc`）渲染兜底页而非构建时抛错；
 - 详情页数据由各自 ViewModel 按 ID 加载，页面自身无状态依赖；
+- Gallery 为 `/gallery` 索引 + 8 个子路由（见上表）；
+- 显式 `MaterialPage` 包装页面（go_router 18 的 material_ui 类型识别与 SDK MaterialApp 不兼容）；Provider 销毁时 `ref.onDispose(router.dispose)` 释放资源；
 - 禁止在业务代码直接调用 Navigator 1.0 API。
 
 ## 测试策略
@@ -333,17 +428,18 @@ if (context.isDarkMode) { ... }
 fvm flutter test
 ```
 
-测试组织约定：`test/` 目录结构镜像 `lib/`，测试文件命名为 `<被测文件名>_test.dart`；共享 Fake 统一放 `test/fakes/`。
+测试组织约定：`test/` 目录结构镜像 `lib/`，测试文件命名为 `<被测文件名>_test.dart`；共享 Fake 统一放 `test/fakes/`。当前共 45 个测试文件：
 
 | 位置 | 覆盖内容 |
 |---|---|
-| `test/fakes/` | Fake Repository（如 FakeUserRepository），配合 ProviderScope override 替换真实数据源 |
-| `test/core/config/` | 环境解析与缺省回落 |
+| `test/fakes/` | FakeUserRepository / ControllableUserRepository、FailingSharedPreferencesStore（模拟落盘失败，驱动 bootstrap 失败路径） |
+| `test/main_test.dart` | bootstrap 成功注入、初始化失败进入 StartupFailureApp、重试恢复 |
+| `test/core/config/` | 环境解析、校验与缺省回落 |
 | `test/core/logging/` | DioLoggingInterceptor（自定义 HttpClientAdapter mock） |
-| `test/data/models/` | 模型 JSON 序列化 |
-| `test/data/services/` | UserApiService 响应解析与空响应防护 |
+| `test/data/` | 模型 JSON 序列化；Repository 异常映射；api / 本地存储服务（含空响应防护） |
 | `test/ui/core/theme/` | AppColors lerp/映射、ThemeMode 持久化 |
-| `test/ui/features/user/` | ViewModel 状态流转、列表空态与刷新交互 |
+| `test/ui/core/widgets/` | 18 个通用组件测试：渲染、交互、明暗主题与无障碍语义 |
+| `test/ui/features/` | user（ViewModel 状态流转、列表搜索/空态/刷新）、gallery（索引页 + 8 个演示页）、image_crop（会话生命周期与页面） |
 
 ## 静态检查与 Lint
 
@@ -406,9 +502,10 @@ fvm flutter pub get                                        # 安装依赖
 fvm flutter pub add <包>                                    # 添加依赖
 fvm flutter run --dart-define-from-file=env/dev.json       # 指定环境运行
 fvm flutter pub run build_runner build --delete-conflicting-outputs  # 改 freezed/json 模型后必须执行
+fvm flutter gen-l10n                                      # 修改 lib/l10n/*.arb 后重新生成本地化产物
 ./scripts/check.sh                                        # 格式检查 + 静态分析 + 全量测试
 fvm dart analyze --fatal-infos                             # 静态检查（含 riverpod_lint）
 fvm flutter test                                           # 全量测试
 ```
 
-> 修改任何 `@freezed` / `@JsonSerializable` 模型后，必须重跑 build_runner 生成 `.freezed.dart` / `.g.dart`，否则编译失败。
+> 修改任何 `@freezed` / `@JsonSerializable` 模型后，必须重跑 build_runner 生成 `.freezed.dart` / `.g.dart`，否则编译失败；gen-l10n 产物已入库，重新生成后请一并提交。
