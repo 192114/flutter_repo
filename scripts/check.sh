@@ -14,12 +14,7 @@ if (( $# > 0 )); then
   exit 1
 fi
 
-command -v fvm >/dev/null 2>&1 || {
-  printf '%s\n' '错误：未找到 fvm 命令，请先安装 FVM（https://fvm.app/）' >&2
-  exit 1
-}
-
 find lib test -type f -name '*.dart' ! -name '*.g.dart' ! -name '*.freezed.dart' -print0 |
-  xargs -0 fvm dart format --output=none --set-exit-if-changed
-fvm dart analyze --fatal-infos
-fvm flutter test
+  xargs -0 dart format --output=none --set-exit-if-changed
+dart analyze --fatal-infos
+flutter test

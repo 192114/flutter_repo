@@ -11,10 +11,6 @@
   //   baseUrl 等配置经 --dart-define-from-file 在编译期注入，
   //   见 env/ 目录与 lib/core/config/app_config.dart。
   //   不带 toolArgs 直接运行时安全回落 dev + 演示 API。
-  //
-  // FVM 说明：
-  //   Dart 扩展（v3.98+）自动读取 .fvmrc 锁定的 Flutter 版本，
-  //   无需在 IDE 中额外指定 SDK 路径。
   // ─────────────────────────────────────────────────────────────
   "version": "0.2.0",
   "configurations": [
