@@ -200,6 +200,7 @@ void main() {
       await tester.pumpWidget(
         _buildTestApp(
           _calendar(
+            initialDate: DateTime(2026, 9, 15),
             minDate: DateTime(2026, 9),
             maxDate: DateTime(2026, 12, 31),
           ),
@@ -224,6 +225,7 @@ void main() {
       await tester.pumpWidget(
         _buildTestApp(
           _calendar(
+            initialDate: DateTime(2026, 9, 15),
             minDate: DateTime(2026, 9),
             maxDate: DateTime(2026, 10, 31),
           ),
@@ -964,7 +966,7 @@ void main() {
           result = await AppCalendarPicker.showDate(
             context,
             minDate: DateTime(2026, 9),
-            maxDate: DateTime(2026, 12, 31),
+            maxDate: DateTime(2026, 9, 30),
           );
           callbackRan = true;
         },
@@ -991,7 +993,7 @@ void main() {
           result = await AppCalendarPicker.showRange(
             context,
             minDate: DateTime(2026, 9),
-            maxDate: DateTime(2026, 12, 31),
+            maxDate: DateTime(2026, 9, 30),
           );
         },
       );
