@@ -51,7 +51,7 @@ lib/
 ## 环境配置（多环境）
 
 - 环境文件：`env/dev.json` / `env/staging.json` / `env/prod.json`（入库，仅非敏感配置）。
-- 运行：`fvm flutter run --dart-define-from-file=env/<env>.json`；VSCode 调试配置见 `.vscode/launch.example.jsonc`。
+- 运行：`fvm flutter run --dart-define-from-file=env/<env>.json`；Zed 调试配置见 `.zed/debug.json`。
 - 配置收敛：`lib/core/config/app_config.dart`（`AppEnvironment` 枚举 + freezed `AppConfig` + `appConfigProvider`），缺省安全回落 dev。
 - **敏感值（API Key/Secret）禁止走 dart-define**（会进编译产物），由后端代理签发。
 

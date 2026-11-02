@@ -1,0 +1,19 @@
+{
+  "lsp": {
+    "dart": {
+      "binary": {
+        "path": "mise",
+        "arguments": ["exec", "--", "dart", "language-server", "--protocol=lsp"]
+      }
+    }
+  },
+  "languages": {
+    "Dart": {
+      "format_on_save": "on",
+      "code_actions_on_format": {
+        "source.organizeImports": true,
+        "source.fixAll": true
+      }
+    }
+  }
+}

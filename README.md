@@ -63,7 +63,7 @@ fvm flutter run --dart-define-from-file=env/prod.json
 
 ## 运行与调试
 
-两种启动方式二选一：**命令行一键脚本**（不依赖 IDE）或 **VSCode 调试面板**。
+两种启动方式二选一：**命令行一键脚本**（不依赖 IDE）或 **Zed 调试面板**。
 
 ### 命令行：一键脚本
 
@@ -103,9 +103,17 @@ adb -s emulator-5554 shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sle
 fvm flutter run -d emulator-5554 --dart-define-from-file=env/dev.json
 ```
 
-### VSCode / IDE 调试
+### Zed 调试
 
-复制 `.vscode/launch.example.jsonc` 为同目录 `launch.json`（个人文件已被 gitignore 忽略，不会污染仓库），按 F5 在运行面板选择 dev / staging / prod（debug）或 prod (profile) 启动。Dart 扩展会自动读取 `.fvmrc` 锁定的 SDK 版本，无需额外配置。
+安装 Zed 的 Dart 扩展后，项目级 [.zed/settings.json](.zed/settings.json) 会经 mise 启动 Dart LSP，并在保存时格式化、整理 import 和应用自动修复；[.zed/debug.json](.zed/debug.json) 已内置 dev / staging / prod（debug）及 prod (profile) 四项配置。
+
+先执行 `mise install`，再从项目根目录启动 Zed：
+
+```bash
+mise exec -- zed .
+```
+
+Dart 扩展的调试适配器会独立从 PATH 查找 `flutter`，不读取 LSP 的 binary 配置，因此调试前需让 Zed 继承 mise 环境；若 Zed 已在运行，先完全退出再执行上述命令。随后按 F4 或打开调试面板，选择对应环境启动。
 
 ### 热重载 / 热重启
 
@@ -154,7 +162,7 @@ flutter_repo/
 ├── .github/workflows/ci.yaml     # CI：格式、代码生成一致性、analyze + test
 ├── scripts/                      # run.sh：一键运行；check.sh：格式检查 + analyze + test
 ├── .qoder/                       # AI 工具链（skills / rules）
-├── .vscode/                      # 调试配置模板（launch.example.jsonc）
+├── .zed/                         # Dart LSP / 格式化设置与多环境调试配置
 ├── .mcp.json                     # Dart MCP server 接入
 ├── AGENTS.md                     # AI 协作强制约定
 └── pubspec.yaml

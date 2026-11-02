@@ -13,14 +13,11 @@
 .swiftpm/
 migrate_working_dir/
 
-# IntelliJ / Android Studio 个人配置（团队共享配置走 .vscode/launch.example.jsonc）
+# IntelliJ / Android Studio 个人配置（团队共享 Zed 配置走 .zed/）
 *.iml
 *.ipr
 *.iws
 .idea/
-
-# VSCode 个人调试配置（团队共享示例见 launch.example.jsonc）
-.vscode/launch.json
 
 # Flutter/Dart/Pub 工具生成物
 **/doc/api/

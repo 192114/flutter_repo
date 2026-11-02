@@ -1,0 +1,42 @@
+[
+  {
+    "adapter": "Dart",
+    "label": "dev (debug)",
+    "type": "flutter",
+    "request": "launch",
+    "program": "lib/main.dart",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "flutterMode": "debug",
+    "toolArgs": ["--dart-define-from-file=env/dev.json"]
+  },
+  {
+    "adapter": "Dart",
+    "label": "staging (debug)",
+    "type": "flutter",
+    "request": "launch",
+    "program": "lib/main.dart",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "flutterMode": "debug",
+    "toolArgs": ["--dart-define-from-file=env/staging.json"]
+  },
+  {
+    "adapter": "Dart",
+    "label": "prod (debug)",
+    "type": "flutter",
+    "request": "launch",
+    "program": "lib/main.dart",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "flutterMode": "debug",
+    "toolArgs": ["--dart-define-from-file=env/prod.json"]
+  },
+  {
+    "adapter": "Dart",
+    "label": "prod (profile)",
+    "type": "flutter",
+    "request": "launch",
+    "program": "lib/main.dart",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "flutterMode": "profile",
+    "toolArgs": ["--dart-define-from-file=env/prod.json"]
+  }
+]
