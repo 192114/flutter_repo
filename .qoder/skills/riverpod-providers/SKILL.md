@@ -24,12 +24,12 @@ Pick the type based on what you want to return; the provider type follows natura
 
 ### Creating a provider (unmodifiable / functional)
 
-**Manual:**
+**Manual:** Access data through the project's abstract Repository rather than calling an HTTP client directly.
 
 ```dart
 final userProvider = FutureProvider<User>((ref) async {
-  final response = await http.get('https://api.example.com/user/123');
-  return User.fromJson(response.body);
+  final repository = ref.watch(userRepositoryProvider);
+  return repository.getUser(123);
 });
 ```
 
@@ -38,8 +38,8 @@ final userProvider = FutureProvider<User>((ref) async {
 ```dart
 @riverpod
 Future<User> user(Ref ref) async {
-  final response = await http.get('https://api.example.com/user/123');
-  return User.fromJson(response.body);
+  final repository = ref.watch(userRepositoryProvider);
+  return repository.getUser(123);
 }
 ```
 

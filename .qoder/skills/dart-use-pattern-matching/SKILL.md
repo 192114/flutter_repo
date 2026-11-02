@@ -1,13 +1,6 @@
 ---
 name: dart-use-pattern-matching
-description: >-
-  Applies Dart 3 pattern matching, switch expressions, and destructuring
-  idiomatically to validate data schemas, handle algebraic data types, and
-  decompose control flow. Use when refactoring complex if-else chains,
-  parsing polymorphic JSON or API responses, destructuring Records or Maps, or
-  enforcing exhaustiveness on sealed classes. Don't use for simple boolean
-  conditions, single-variable type promotion (use `is`), or basic collection
-  filtering.
+description: Applies Dart 3 pattern matching, switch expressions, and destructuring to algebraic data types, Records, Maps, and complex control flow. Use when refactoring complex if-else chains or enforcing exhaustiveness on sealed classes. Don't use for JSON deserialization (use freezed/json_serializable), simple boolean conditions, single-variable type promotion, or basic collection filtering.
 metadata:
   model: models/gemini-3.1-pro-preview
   last_modified: Sun, 06 Sep 2026 06:43:00 GMT
@@ -26,10 +19,10 @@ metadata:
 
 Apply specific pattern types based on the data structure and desired outcome. Follow these conditional guidelines:
 
-*   **If validating and extracting from deserialized data (e.g., JSON):** Use Map, List, and Object patterns to validate schema structure and destructure properties in a single step.
-*   **If handling polymorphic payloads or responses:** Use `switch` expressions over map discriminant keys to deserialize into `sealed` class hierarchies.
+*   **If destructuring structured values:** Use Map, List, Record, and Object patterns to extract properties in a single step.
 *   **If handling multiple return values:** Use Record patterns to destructure fields directly into local variables.
 *   **If executing type-specific behavior (Algebraic Data Types):** Use Object patterns combined with `sealed` classes to ensure exhaustiveness.
+*   **If deserializing JSON:** Use the project's freezed/json_serializable models instead of handwritten Map-pattern deserialization.
 *   **If matching numeric ranges or conditions:** Use Relational (`>=`, `<=`) and Logical-and (`&&`) patterns within switch arms.
 *   **If multiple cases share logic:** Use Logical-or (`||`) patterns to share a single case body or guard clause.
 *   **If ignoring specific values:** Use the Wildcard pattern (`_`) or a non-matching Rest element (`...`) in collections.
@@ -147,47 +140,22 @@ Use standard boolean operators (`if (code >= 200 && code < 300)`) instead of `if
 ### Task Progress: Implementing Pattern Matching
 Copy this checklist to track progress when implementing complex pattern matching logic:
 
-- [ ] Identify the data structure being evaluated (JSON, Record, Class, Enum).
+- [ ] Identify the data structure being evaluated (Record, Map, Class, Enum).
 - [ ] Select the appropriate switch construct (Expression for values, Statement for side-effects).
 - [ ] Define the required patterns (Object, Map, List, Record).
 - [ ] Extract required data using Variable patterns (`var x`, `:var y`).
 - [ ] Apply Guard clauses (`when condition`) for logic that cannot be expressed via patterns.
 - [ ] Handle unmatched cases using a Wildcard (`_`) or `default` clause (if not using a sealed class).
-- [ ] Run static analyzer for exhaustiveness and dead code (`dart analyze`).
-- [ ] Verify runtime Map/JSON pattern behavior on omitted keys (`containsKey` semantics) vs explicit `null` values.
+- [ ] Run `mise exec -- dart analyze` to verify exhaustiveness and detect dead code.
 
-### Feedback Loop 1: Exhaustiveness Checking (Static Verification)
+### Feedback Loop: Exhaustiveness Checking
 When switching over `sealed` classes or enums, ensure all subtypes are handled at compile time:
 
-1. **Run analyzer:** Execute `dart analyze`.
+1. **Run analyzer:** Execute `mise exec -- dart analyze`.
 2. **Review errors:** Look for "The type 'X' is not exhaustively matched by the switch cases" or unreachable pattern arm warnings.
 3. **Fix:** Add the missing Object patterns for unhandled subtypes, or add an explicit wildcard (`_`) arm if a default fallback or error is acceptable.
 
-### Feedback Loop 2: Runtime Map & JSON Pattern Verification
-Because `dart analyze` cannot statically verify dynamic `Map<String, dynamic>` keys, validate runtime pattern semantics explicitly:
-
-1. **Omitted Keys vs. Explicit `null`**: A map pattern `{'key': String? val}` checks `map.containsKey('key')`. If `'key'` is omitted from the JSON payload, the pattern fails to match at runtime even though `String?` is nullable. Extract optional keys from the validated map directly (`map['key'] as String?`).
-2. **Fast-Fail Fallback**: Ensure unmatched or malformed map structures hit an explicit `_ => throw FormatException(...)` arm rather than silently failing an `if-case` check.
-
 ## Examples
-
-### Polymorphic JSON Deserialization (Discriminated Unions)
-Use Map patterns with switch expressions to validate tagged JSON payloads and
-construct `sealed` class hierarchies. See
-[examples/json_patterns.dart](examples/json_patterns.dart) for an executable
-implementation demonstrating tagged `ApiResponse` parsing into `SuccessResponse`
-and `ErrorResponse`.
-
-### Nested JSON Validation and Optional Fields
-Use nested Map and List patterns to validate required schema structure and
-extract collections in a single step. See
-[examples/json_patterns.dart](examples/json_patterns.dart) for an executable
-implementation of `processUserPayload`.
-
-Map patterns check for key existence (`containsKey`). If an optional JSON key
-might be omitted entirely from the payload (rather than explicitly passed as
-`'key': null`), destructure required keys via the pattern and extract optional
-fields directly from the matched submap.
 
 ### Algebraic Data Types (Sealed Classes)
 Use Object patterns with switch expressions to handle family types exhaustively.

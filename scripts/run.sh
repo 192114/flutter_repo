@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────
-# 一键运行：自动启动 iOS / Android 模拟器并按环境执行 flutter run。
+# 一键运行：自动启动 iOS / Android 模拟器并按环境经 mise 执行 flutter run。
 #
 # 用法（环境与平台参数顺序任意，均可省略）：
 #   ./scripts/run.sh                        # macOS 缺省 iOS + dev 环境
@@ -14,7 +14,7 @@
 #   1. 校验  环境文件 / 目标设备；
 #   2. iOS：simctl boot + bootstatus 阻塞等待就绪 + 打开 Simulator 窗口；
 #      Android：emulator 后台启动 + adb 轮询 sys.boot_completed 等待就绪；
-#   3. exec flutter run -d <设备> --dart-define-from-file=env/<env>.json。
+#   3. exec mise exec -- flutter run -d <设备> --dart-define-from-file=env/<env>.json。
 #
 # 环境变量：
 #   SIMULATOR  iOS 目标模拟器名（缺省 iPhone 17 Pro）
@@ -99,8 +99,8 @@ run_ios() {
   # 确保模拟器窗口可见（设备可能已 boot 但窗口被关闭）
   open -a Simulator
 
-  echo "运行：flutter run -d \"$device\" --dart-define-from-file=$env_file"
-  exec flutter run -d "$device" --dart-define-from-file="$env_file"
+  echo "运行：mise exec -- flutter run -d \"$device\" --dart-define-from-file=$env_file"
+  exec mise exec -- flutter run -d "$device" --dart-define-from-file="$env_file"
 }
 
 # ── Android：依赖 emulator + adb ──
@@ -224,15 +224,15 @@ run_android() {
   fi
   echo "模拟器就绪：${avd}（${serial}）"
 
-  echo "运行：flutter run -d \"$serial\" --dart-define-from-file=$env_file"
-  exec flutter run -d "$serial" --dart-define-from-file="$env_file"
+  echo "运行：mise exec -- flutter run -d \"$serial\" --dart-define-from-file=$env_file"
+  exec mise exec -- flutter run -d "$serial" --dart-define-from-file="$env_file"
 }
 
 # ── 平台分发 ──
 case "$platform" in
   auto)
     echo "提示：非 macOS 系统且未指定平台，跳过模拟器启动，由 flutter 自动选择已连接设备"
-    exec flutter run --dart-define-from-file="$env_file"
+    exec mise exec -- flutter run --dart-define-from-file="$env_file"
     ;;
   ios)
     run_ios

@@ -3,19 +3,19 @@
 本文件是 AI 编程助手（Qoder Agent 等）在本项目工作的强制约定。
 **当本文件与任何通用 Flutter/Dart 技能（skills）或通用最佳实践冲突时，以本文件为准。**
 
-## 命令约定（FVM 项目，全局无 dart/flutter 命令）
+## 命令约定（mise 项目）
 
-所有 Flutter/Dart 命令必须加 `fvm` 前缀（SDK 由 `.fvmrc` 锁定 3.47.0）：
+Flutter 3.47.0 与 Java 21 由 `mise.toml` 锁定。首次使用先执行 `mise install`，所有 Flutter/Dart 命令通过 `mise exec --` 运行：
 
 ```bash
-fvm flutter pub add <包>
-fvm flutter pub run build_runner build --delete-conflicting-outputs  # 改 freezed/json 模型后必须执行，否则编译失败
-fvm flutter test
-fvm dart analyze    # 静态检查必须用这个（fvm flutter analyze 不加载 riverpod_lint 插件）
+mise exec -- flutter pub add <包>
+mise exec -- dart run build_runner build  # 改 freezed/json 模型后必须执行，否则编译失败
+mise exec -- flutter test
+mise exec -- dart analyze    # 静态检查必须用这个（flutter analyze 不加载 riverpod_lint 插件）
 ```
 
 - 修改任何 `@freezed` / `@JsonSerializable` 模型后，必须重跑 build_runner。
-- 完整 lint 检查（含 riverpod_lint 规则）只能用 `fvm dart analyze`，`fvm flutter analyze` 会静默跳过插件。
+- 完整 lint 检查（含 riverpod_lint 规则）只能用 `mise exec -- dart analyze`，`mise exec -- flutter analyze` 会静默跳过插件。
 
 ## 架构（严格分层 + MVVM）
 
@@ -51,7 +51,7 @@ lib/
 ## 环境配置（多环境）
 
 - 环境文件：`env/dev.json` / `env/staging.json` / `env/prod.json`（入库，仅非敏感配置）。
-- 运行：`fvm flutter run --dart-define-from-file=env/<env>.json`；Zed 调试配置见 `.zed/debug.json`。
+- 运行：`mise exec -- flutter run --dart-define-from-file=env/<env>.json`；Zed 调试配置见 `.zed/debug.json`。
 - 配置收敛：`lib/core/config/app_config.dart`（`AppEnvironment` 枚举 + freezed `AppConfig` + `appConfigProvider`），缺省安全回落 dev。
 - **敏感值（API Key/Secret）禁止走 dart-define**（会进编译产物），由后端代理签发。
 
@@ -60,8 +60,8 @@ lib/
 提交前必须全绿：
 
 ```bash
-fvm dart analyze   # 0 issues
-fvm flutter test   # all passed
+mise exec -- dart analyze   # 0 issues
+mise exec -- flutter test   # all passed
 ```
 
 测试组织：`test/` 目录结构镜像 `lib/`，测试文件命名为 `<被测文件名>_test.dart`；共享 Fake 放 `test/fakes/`（不要在 lib 内写测试辅助类）。

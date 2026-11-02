@@ -26,7 +26,7 @@
 
 | 场景 | 方案 | 说明 |
 |---|---|---|
-| SDK 管理 | FVM（Flutter 3.47.0） | `.fvmrc` 锁定版本，所有命令加 `fvm` 前缀 |
+| SDK 管理 | mise（Flutter 3.47.0 / Java 21） | `mise.toml` 锁定版本，命令经 `mise exec --` 执行 |
 | 状态管理 / DI | `flutter_riverpod` 3.x | Notifier/AsyncNotifier，Provider 即依赖注入容器 |
 | 网络请求 | `dio` | 全局单实例 `dioProvider`，拦截器统一装配 |
 | JSON 序列化 | `freezed` + `json_serializable` + `build_runner` | 不可变模型，代码生成 |
@@ -42,19 +42,22 @@
 
 ## 快速开始
 
-前置要求：安装 [FVM](https://fvm.app/)，SDK 版本由 `.fvmrc` 自动锁定（Flutter 3.47.0 / Dart ^3.13.0），无需全局 Flutter。
+前置要求：安装 mise，SDK 版本由 `mise.toml` 锁定（Flutter 3.47.0 / Java 21 / Dart ^3.13.0），无需全局 Flutter。
 
 ```bash
+# 安装并激活项目工具链
+mise install
+
 # 安装依赖
-fvm flutter pub get
+mise exec -- flutter pub get
 
 # 运行（dev 环境，缺省安全回落 dev + 演示 API）
-fvm flutter run
+mise exec -- flutter run
 
 # 指定环境运行
-fvm flutter run --dart-define-from-file=env/dev.json
-fvm flutter run --dart-define-from-file=env/staging.json
-fvm flutter run --dart-define-from-file=env/prod.json
+mise exec -- flutter run --dart-define-from-file=env/dev.json
+mise exec -- flutter run --dart-define-from-file=env/staging.json
+mise exec -- flutter run --dart-define-from-file=env/prod.json
 ```
 
 启动后首屏为用户列表页；AppBar 右侧「组件库」图标进入 [Gallery 组件展示页](#通用组件库与-gallery)，主题菜单可运行时切换明暗。
@@ -67,7 +70,7 @@ fvm flutter run --dart-define-from-file=env/prod.json
 
 ### 命令行：一键脚本
 
-[scripts/run.sh](scripts/run.sh) 自动完成全流程：检测目标模拟器是否已启动 → 未启动则后台启动并阻塞等待系统就绪（iOS 用 `simctl bootstatus`，Android 轮询 `sys.boot_completed`）→ 按环境执行 `fvm flutter run -d ... --dart-define-from-file=...`：
+[scripts/run.sh](scripts/run.sh) 自动完成全流程：检测目标模拟器是否已启动 → 未启动则后台启动并阻塞等待系统就绪（iOS 用 `simctl bootstatus`，Android 轮询 `sys.boot_completed`）→ 按环境执行 `mise exec -- flutter run -d ... --dart-define-from-file=...`：
 
 ```bash
 ./scripts/run.sh                   # dev + iOS 模拟器（macOS 缺省）
@@ -95,12 +98,12 @@ AVD="Pixel_7_Pro" ./scripts/run.sh android dev    # Android AVD 名（缺省取�
 xcrun simctl boot "iPhone 17 Pro"            # 启动模拟器
 xcrun simctl bootstatus "iPhone 17 Pro" -b   # 阻塞等待系统就绪
 open -a Simulator                            # 显示模拟器窗口
-fvm flutter run -d "iPhone 17 Pro" --dart-define-from-file=env/dev.json
+mise exec -- flutter run -d "iPhone 17 Pro" --dart-define-from-file=env/dev.json
 
 # Android
 ~/Library/Android/sdk/emulator/emulator -avd Pixel_7_Pro &   # 后台启动 AVD
 adb -s emulator-5554 shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done'
-fvm flutter run -d emulator-5554 --dart-define-from-file=env/dev.json
+mise exec -- flutter run -d emulator-5554 --dart-define-from-file=env/dev.json
 ```
 
 ### Zed 调试
@@ -125,7 +128,7 @@ Dart 扩展的调试适配器会独立从 PATH 查找 `flutter`，不读取 LSP 
 | `R` | 热重启：App 整体重启，状态清零（改 `main()` / 依赖 / 全局初值后使用） |
 | `q` | 退出调试会话 |
 
-> 误按 `q` 退出但 App 仍在运行时，可用 `fvm flutter attach -d "iPhone 17 Pro"` 重新挂载，之后 `r` / `R` 照常可用；修改 `pubspec.yaml` 或执行 build_runner 后，热重载不生效，需退出后重新运行。
+> 误按 `q` 退出但 App 仍在运行时，可用 `mise exec -- flutter attach -d "iPhone 17 Pro"` 重新挂载，之后 `r` / `R` 照常可用；修改 `pubspec.yaml` 或执行 build_runner 后，热重载不生效，需退出后重新运行。
 
 ## 项目结构
 
@@ -154,7 +157,7 @@ flutter_repo/
 │           ├── user/             # 用户列表 / 详情（view_model/ + widgets/）
 │           ├── gallery/          # 组件库演示页（8 组 demo + 索引页）
 │           └── image_crop/       # 图片裁剪（会话式全屏编辑）
-├── test/                         # 单元 / Widget 测试（45 个文件，目录结构镜像 lib/）
+├── test/                         # 单元 / Widget 测试（目录结构镜像 lib/）
 │   ├── fakes/                    # Fake / 可控 Repository、失败存储（供测试替换）
 │   ├── core/  data/              # config / logging / models / repositories / services
 │   ├── ui/core/widgets/          # 通用组件测试（渲染 / 交互 / 明暗 / 无障碍）
@@ -318,7 +321,7 @@ App 已完成品牌化（橙色小幽灵图标 + 橙黑暖光启动页），资�
 - 装配：[app.dart](lib/app.dart) 在 `MaterialApp.router` 上挂 `localizationsDelegates` + `supportedLocales`；
 - 消费：通用组件的内置文案全部经 `AppLocalizations.of(context)!` 取用（含无障碍语义标签），不写死中文。
 
-新增文案流程：arb 加 key（en 模板 + zh 翻译）→ 执行 `fvm flutter gen-l10n` 重新生成（`pub get` / 构建时也会自动触发）→ 一并提交生成产物。
+新增文案流程：arb 加 key（en 模板 + zh 翻译）→ 执行 `mise exec -- flutter gen-l10n` 重新生成（`pub get` / 构建时也会自动触发）→ 一并提交生成产物。
 
 ## 通用组件库与 Gallery
 
@@ -433,10 +436,10 @@ App 已完成品牌化（橙色小幽灵图标 + 橙黑暖光启动页），资�
 ## 测试策略
 
 ```bash
-fvm flutter test
+mise exec -- flutter test
 ```
 
-测试组织约定：`test/` 目录结构镜像 `lib/`，测试文件命名为 `<被测文件名>_test.dart`；共享 Fake 统一放 `test/fakes/`。当前共 45 个测试文件：
+测试组织约定：`test/` 目录结构镜像 `lib/`，测试文件命名为 `<被测文件名>_test.dart`；共享 Fake 统一放 `test/fakes/`。
 
 | 位置 | 覆盖内容 |
 |---|---|
@@ -460,7 +463,7 @@ fvm flutter test
 - **一致性**：`always_declare_return_types`、`directives_ordering`、`prefer_relative_imports`（lib 内统一相对导入）、`sort_pub_dependencies`；
 - **性能与可维护性**：`avoid_slow_async_io`、`avoid_function_literals_in_foreach_calls`、`unnecessary_lambdas` 等。
 
-> **注意**：`fvm flutter analyze` 不会加载 riverpod_lint 插件，完整检查必须用 `fvm dart analyze`。
+> **注意**：`mise exec -- flutter analyze` 不会加载 riverpod_lint 插件，完整检查必须用 `mise exec -- dart analyze`。
 
 提交前执行一键检查（需要先安装项目依赖）：
 
@@ -468,13 +471,13 @@ fvm flutter test
 ./scripts/check.sh
 ```
 
-[scripts/check.sh](scripts/check.sh) 依次执行手写 Dart 格式检查、`fvm dart analyze --fatal-infos` 和 `fvm flutter test`，任一步失败立即退出。脚本自动定位项目根目录，检查不会自动格式化文件或运行代码生成。
+[scripts/check.sh](scripts/check.sh) 依次执行手写 Dart 格式检查、`mise exec -- dart analyze --fatal-infos` 和 `mise exec -- flutter test`，任一步失败立即退出。脚本自动定位项目根目录，检查不会自动格式化文件或运行代码生成。
 
 格式范围为 `lib/`、`test/` 下的 Dart 文件，排除 `*.g.dart`、`*.freezed.dart`。需要修复格式时执行：
 
 ```bash
 find lib test -type f -name '*.dart' ! -name '*.g.dart' ! -name '*.freezed.dart' -print0 |
-  xargs -0 fvm dart format
+  xargs -0 mise exec -- dart format
 ```
 
 修改模型后仍需先手动执行 build_runner，见[常用命令速查](#常用命令速查)。
@@ -483,9 +486,9 @@ find lib test -type f -name '*.dart' ! -name '*.g.dart' ! -name '*.freezed.dart'
 
 [.github/workflows/ci.yaml](.github/workflows/ci.yaml) 在 push 到 main/master 或提 PR 时自动执行：
 
-- **SDK 版本直接读 `.fvmrc`**（subosito/flutter-action），CI 无需安装 FVM，与本地版本一致；
+- **SDK 版本统一读 `mise.toml`**：通过 mise 安装 Flutter / Java，与本地工具链一致；
 - **并发去重**：同一分支 / PR 的旧运行自动取消，节省 CI 时长；
-- **依赖与生成产物**：严格按 lockfile 安装依赖，重新执行 build_runner 并检查已跟踪的生成文件无差异；
+- **依赖与生成产物**：严格按 lockfile 安装依赖，重新执行 build_runner 与 gen-l10n，并检查工作树无已跟踪修改或未跟踪生成文件；
 - **格式门禁**：与 `check.sh` 相同的手写 Dart 范围，仅检查、不写文件；
 - **分析与测试**：`dart analyze --fatal-infos`（info 级也视为失败，对齐「0 issues」标准）+ `flutter test` 全量通过。
 
@@ -496,9 +499,9 @@ find lib test -type f -name '*.dart' ! -name '*.g.dart' ! -name '*.freezed.dart'
 | 位置 | 作用 |
 |---|---|
 | [AGENTS.md](AGENTS.md) | AI 协作强制约定：命令前缀、架构规则、技术栈声明（压制冲突技能）、环境与验证标准 |
-| [.mcp.json](.mcp.json) | Dart MCP server（`fvm dart mcp-server`）：支持运行中 App 的热重载、调试、 Flutter 工具链操作 |
+| [.mcp.json](.mcp.json) | Dart MCP server（`mise exec -- dart mcp-server`）：支持运行中 App 的热重载、调试、 Flutter 工具链操作 |
 | `.qoder/rules/flutter-hot-reload.md` | 触发式规则：编辑 `lib/**` 下 Dart 文件后自动经 Dart MCP 触发热重载/热重启 |
-| `.qoder/skills/` | 11 个精简版 Agent Skills：Dart（单测、模式匹配、依赖冲突处理）、Flutter（组件测试、组件预览、响应式布局、布局排错）、Riverpod（providers/consumers/testing/auto-dispose） |
+| `.qoder/skills/` | 9 个按需触发的 Agent Skills：Dart（模式匹配、依赖冲突处理）、Flutter（组件测试、组件预览、响应式布局）、Riverpod（providers/consumers/testing/auto-dispose） |
 | [skills-lock.json](skills-lock.json) | Skills 来源与内容哈希清单，与保留的技能目录同步维护 |
 
 > Skills 内容与项目技术栈声明的冲突处理规则：以 AGENTS.md 为准（如本项目用 dio 不用 http 包、用 freezed 不手写序列化）。
@@ -506,14 +509,14 @@ find lib test -type f -name '*.dart' ! -name '*.g.dart' ! -name '*.freezed.dart'
 ## 常用命令速查
 
 ```bash
-fvm flutter pub get                                        # 安装依赖
-fvm flutter pub add <包>                                    # 添加依赖
-fvm flutter run --dart-define-from-file=env/dev.json       # 指定环境运行
-fvm flutter pub run build_runner build --delete-conflicting-outputs  # 改 freezed/json 模型后必须执行
-fvm flutter gen-l10n                                      # 修改 lib/l10n/*.arb 后重新生成本地化产物
+mise exec -- flutter pub get                                        # 安装依赖
+mise exec -- flutter pub add <包>                                    # 添加依赖
+mise exec -- flutter run --dart-define-from-file=env/dev.json       # 指定环境运行
+mise exec -- dart run build_runner build                          # 改 freezed/json 模型后必须执行
+mise exec -- flutter gen-l10n                                      # 修改 lib/l10n/*.arb 后重新生成本地化产物
 ./scripts/check.sh                                        # 格式检查 + 静态分析 + 全量测试
-fvm dart analyze --fatal-infos                             # 静态检查（含 riverpod_lint）
-fvm flutter test                                           # 全量测试
+mise exec -- dart analyze --fatal-infos                             # 静态检查（含 riverpod_lint）
+mise exec -- flutter test                                           # 全量测试
 ```
 
 > 修改任何 `@freezed` / `@JsonSerializable` 模型后，必须重跑 build_runner 生成 `.freezed.dart` / `.g.dart`，否则编译失败；gen-l10n 产物已入库，重新生成后请一并提交。

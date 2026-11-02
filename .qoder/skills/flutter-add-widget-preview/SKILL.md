@@ -53,7 +53,7 @@ Follow the appropriate conditional workflow to launch and interact with the Widg
 
 **If using the Command Line:**
 1. Navigate to the Flutter project's root directory.
-2. Run `flutter widget-preview start`.
+2. Run `mise exec -- flutter widget-preview start`.
 3. View the automatically opened Chrome environment.
 
 **Feedback Loop: Preview Iteration**

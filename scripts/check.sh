@@ -15,6 +15,6 @@ if (( $# > 0 )); then
 fi
 
 find lib test -type f -name '*.dart' ! -name '*.g.dart' ! -name '*.freezed.dart' -print0 |
-  xargs -0 dart format --output=none --set-exit-if-changed
-dart analyze --fatal-infos
-flutter test
+  xargs -0 mise exec -- dart format --output=none --set-exit-if-changed
+mise exec -- dart analyze --fatal-infos
+mise exec -- flutter test
